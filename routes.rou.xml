@@ -1,0 +1,21 @@
+<routes>
+    <vType id="binek" accel="2.5" decel="4.5" length="4.5" maxSpeed="50" color="1,1,0" sigma="0.8" speedFactor="1.2"/>
+    <vType id="kamyon" accel="1.0" decel="3.5" length="10.0" maxSpeed="30" color="0,1,0"/>
+    <vType id="agresif_surucu" accel="3.5" decel="4.5" length="4.5" maxSpeed="60" color="1,0,1" sigma="1.0" minGap="1.0"/>
+
+
+    <route id="rota_kurban" edges="otoban_sol_1 otoban_sag_1 sehir_solgiris ara_sol_1 ara_merkez_1 ara_sol_2 sehir_solcikis sehir_cikis_1"/>
+    <route id="rota_sehir" edges="otoban_sol_1 otoban_sag_1 sehir_solgiris sehir_merkez_alt_1 sehir_solcikis sehir_cikis_1"/>
+
+    <route id="rota_kaos" edges="otoban_yukari_2 otoban_asagi_1"/>
+
+
+    <flow id="akis_sehir" type="binek" route="rota_sehir" begin="0" end="1000" probability="0.3" departPos="last"/>
+    <flow id="akis_sokak" type="binek" route="rota_kurban" begin="0" end="1000" probability="0.1" departPos="last"/>
+
+    <flow id="akis_kaos" type="agresif_surucu" route="rota_kaos" begin="5" end="1000" probability="0.3" departPos="last"/>
+
+
+    <vehicle id="hedef_arac" type="binek" route="rota_kurban" depart="20" color="1,0,0"/>
+
+</routes>
