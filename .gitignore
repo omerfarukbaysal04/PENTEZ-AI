@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Sanal ortam
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker
+*.log
+
+# SUMO geçici dosyalar
+*.xml.bak
+tripinfos.xml
+summary.xml
+
+# Güvenlik — bunları asla commit etme
+.env
+secrets.txt
+*.key
+*.pem
