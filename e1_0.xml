@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2026-02-23T15:10:20.859058+03:00 by Eclipse SUMO GUI 1.25.0
+<!-- generated on 2026-02-27T21:45:04.519528+03:00 by Eclipse SUMO GUI 1.25.0
 <sumoConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
 
     <input>
@@ -21,7 +21,7 @@
     </processing>
 
     <traci_server>
-        <remote-port value="62948"/>
+        <remote-port value="60757"/>
     </traci_server>
 
     <gui_only>
@@ -29,3 +29,10 @@
     </gui_only>
 
 </sumoConfiguration>
+-->
+
+<detector xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/det_e1_file.xsd">
+    <interval begin="0.00" end="300.00" id="sensor_kavsak" nVehContrib="13" flow="156.00" occupancy="4.29" speed="5.69" harmonicMeanSpeed="4.55" length="4.50" nVehEntered="13"/>
+    <interval begin="300.00" end="600.00" id="sensor_kavsak" nVehContrib="19" flow="228.00" occupancy="5.89" speed="6.04" harmonicMeanSpeed="4.84" length="4.50" nVehEntered="19"/>
+    <interval begin="600.00" end="900.00" id="sensor_kavsak" nVehContrib="16" flow="192.00" occupancy="4.89" speed="6.28" harmonicMeanSpeed="4.91" length="4.50" nVehEntered="16"/>
+    <interval begin="900.00" end="1030.00" id="sensor_kavsak" nVehContrib="5" flow="138.46" occupancy="4.17" speed="5.41" harmonicMeanSpeed="4.15" length="4.50" nVehEntered="5"/>

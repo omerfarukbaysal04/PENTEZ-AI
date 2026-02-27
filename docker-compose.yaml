@@ -1,6 +1,8 @@
 version: '3.8'
 
 services:
+
+  # Zafiyetli Web Paneli
   web_panel:
     build: ./web_panel
     ports:
@@ -8,6 +10,14 @@ services:
     volumes:
       - ./web_panel:/app
     environment:
-      SECURITY_MODE: SECURE   # SECURE veya VULNERABLE olarak değiştir
+      SECURITY_MODE: VULNERABLE   # SECURE veya VULNERABLE
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  # Zafiyetli Araç Kontrol Servisi
+  # Zafiyet: SSH açık, şifre zayıf (root:1234)
+  vehicle_controller:
+    build: ./vehicle_controller
+    ports:
+      - "2222:22"    # Host'tan 2222 portu ile erişilir (22 genelde dolu olur)
+    container_name: vehicle_controller
