@@ -44,7 +44,7 @@ class StrategicAgent:
         }
 
         try:
-            response = requests.post(self.api_url, json=payload, timeout=30)
+            response = requests.post(self.api_url, json=payload, timeout=60)
             response.raise_for_status()
 
             raw_text      = response.json().get('response', '{}')

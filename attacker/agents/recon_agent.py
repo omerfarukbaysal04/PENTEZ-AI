@@ -20,6 +20,16 @@ class ReconAgent:
         return None
 
     def run(self, blackboard):
+        import requests
+        # SECURITY_MODE'u web panelden oku
+        security_mode = "VULNERABLE"
+        try:
+            r = requests.get("http://localhost:5000", timeout=2)
+            if "MOD: GÜVENLİ" in r.text or "SECURE" in r.text.upper() and "ZAFİYETLİ" not in r.text:
+                security_mode = "SECURE"
+        except Exception:
+            pass
+
         state     = blackboard.read_state()
         target_ip = state.get("target_ip", "localhost")
 
@@ -39,12 +49,17 @@ class ReconAgent:
         if open_ports:
             blackboard.update_key("open_ports", open_ports)
 
-            # SSH portu açıksa zafiyeti kaydet ve direkt EXPLOIT'e geç
+            # SSH portu açıksa — sadece VULNERABLE modda zafiyet kaydet
             if 2222 in open_ports or 22 in open_ports:
-                print(f"🚨 [RECON] KRİTİK: SSH portu açık — zayıf şifre zafiyeti olabilir!")
-                blackboard.update_key("vulnerabilities", ["SSH_OPEN_WEAK_PASSWORD"])
-                blackboard.update_key("current_phase", "EXPLOIT")
-                print(f"📋 [RECON] Faz → EXPLOIT (SSH zafiyeti tespit edildi)")
+                if security_mode == "VULNERABLE":
+                    print(f"🚨 [RECON] KRİTİK: SSH portu açık — zayıf şifre zafiyeti olabilir!")
+                    blackboard.update_key("vulnerabilities", ["SSH_OPEN_WEAK_PASSWORD"])
+                    blackboard.update_key("current_phase", "EXPLOIT")
+                    print(f"📋 [RECON] Faz → EXPLOIT (SSH zafiyeti tespit edildi)")
+                else:
+                    print(f"🛡️  [RECON] SSH portu açık ama SECURE modda brute force engellendi.")
+                    blackboard.update_key("current_phase", "ANALYSIS")
+                    print(f"📋 [RECON] Faz → ANALYSIS")
             else:
                 blackboard.update_key("current_phase", "ANALYSIS")
                 print(f"📋 [RECON] Faz → ANALYSIS")
