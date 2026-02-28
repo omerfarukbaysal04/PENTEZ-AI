@@ -12,14 +12,13 @@ SUMO_CMD = ["sumo-gui", "-c", "simulation.sumocfg", "--start"]
 SERVER_HOST = '0.0.0.0'
 SERVER_PORT = 9999
 
-# Fidye notu içeriği
 RANSOM_NOTE = """
 ╔══════════════════════════════════════════════════════════╗
 ║              !!!  UYARI: SİSTEM ŞİFRELENDİ  !!!         ║
 ╠══════════════════════════════════════════════════════════╣
 ║                                                          ║
 ║  Tüm trafik kontrol dosyalarınız şifrelenmiştir.         ║
-║  Sistemi geri almak için 48 saat içinde                   ║
+║  Sistemi geri almak için 48 saat içinde                  ║
 ║  iletişime geçin: darkweb@ransomgroup.onion              ║
 ║                                                          ║
 ║  Ödeme yapılmazsa tüm veriler silinecektir.              ║
@@ -29,21 +28,14 @@ RANSOM_NOTE = """
 """
 
 command_queue = []
-
-# Ransomware tetiklendiğinde True olur — simülasyon döngüsünü kırar
 ransomware_triggered = False
 
 
 def drop_ransom_note():
-    """Fidye notunu masaüstü konumuna bırakır"""
-    # Windows masaüstü yolu
     desktop = os.path.join(os.path.expanduser("~"), "Desktop")
     note_path = os.path.join(desktop, "DOSYALARINIZ_SIFRELENDI.txt")
-
-    # Masaüstü yoksa proje klasörüne yaz
     if not os.path.exists(desktop):
         note_path = "DOSYALARINIZ_SIFRELENDI.txt"
-
     try:
         with open(note_path, "w", encoding="utf-8") as f:
             f.write(RANSOM_NOTE)
@@ -53,12 +45,6 @@ def drop_ransom_note():
 
 
 def execute_ransomware():
-    """
-    Ransomware saldırısını uygular:
-    1. SUMO'daki tüm araçları durdurur (kilitler)
-    2. Fidye notunu bırakır
-    3. traffic_manager sürecini sonlandırır (pkill etkisi)
-    """
     global ransomware_triggered
     ransomware_triggered = True
 
@@ -66,21 +52,21 @@ def execute_ransomware():
     print("[RANSOMWARE] SALDIRI BAŞLADI!")
     print("=" * 60)
 
-    # Adım 1: SUMO'daki tüm araçları durdur
+    # Adım 1: Tüm araçları durdur ve mora boya
     try:
         vehicle_ids = traci.vehicle.getIDList()
         if vehicle_ids:
             for vid in vehicle_ids:
-                traci.vehicle.setSpeed(vid, 0)       # Hızı sıfırla
-                traci.vehicle.setColor(vid, (139, 0, 255, 255))  # Morya boya (ransomware rengi)
-            traci.simulationStep()  # Değişikliği uygula
+                traci.vehicle.setSpeed(vid, 0)
+                traci.vehicle.setColor(vid, (139, 0, 255, 255))
+            traci.simulationStep()
             print(f"[RANSOMWARE] {len(vehicle_ids)} araç kilitlendi ve mora boyandı.")
         else:
-            print("[RANSOMWARE] Sahadaki araç yok, devam ediliyor.")
+            print("[RANSOMWARE] Sahadaki araç yok.")
     except Exception as e:
         print(f"[RANSOMWARE] Araç kilitleme hatası: {e}")
 
-    # Adım 2: Trafik ışıklarını da kapat (kırmızı)
+    # Adım 2: Tüm ışıkları kırmızıya al
     try:
         tl_ids = traci.trafficlight.getIDList()
         for tl in tl_ids:
@@ -93,30 +79,19 @@ def execute_ransomware():
     # Adım 3: Fidye notunu bırak
     drop_ransom_note()
 
-    # Adım 4: Simülasyonu kapat ve süreci öldür
-    print("[RANSOMWARE] Sistem kapatılıyor — pkill simülasyonu...")
-    time.sleep(1.5)  # Efekt için kısa bekleme
-
-    try:
-        traci.close()
-    except Exception:
-        pass
-
-    print("[RANSOMWARE] traffic_manager.py SONLANDIRILDI.")
+    # Adım 4: Ekrana bas, SUMO ayakta kalıyor
+    print("[RANSOMWARE] Sistem simüle edildi. SUMO ayakta kalıyor.")
     print(RANSOM_NOTE)
-
-    # Süreci sonlandır (pkill etkisi)
-    os.kill(os.getpid(), signal.SIGTERM)
+    # os.kill(os.getpid(), signal.SIGTERM)  # Devre dışı
 
 
 def start_socket_server():
-    """Arka planda Web Panelinden gelen komutları dinler"""
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
         server.bind((SERVER_HOST, SERVER_PORT))
     except OSError:
-        print(f"[HATA] Port {SERVER_PORT} zaten kullanımda! Eski pencereleri kapat.")
+        print(f"[HATA] Port {SERVER_PORT} zaten kullanımda!")
         return
 
     server.listen(5)
@@ -137,7 +112,6 @@ def start_socket_server():
 
 
 def run_simulation():
-    # Dinleme sunucusunu arka planda başlat
     t = threading.Thread(target=start_socket_server)
     t.daemon = True
     t.start()
@@ -152,15 +126,13 @@ def run_simulation():
         sys.exit(1)
 
     print(">>> Sistem Aktif. Trafik Akıyor...")
-    print(">>> Web Paneli artık bağlanabilir: localhost:5000")
+    print(">>> Web Paneli: localhost:5000")
 
     while True:
         try:
-            # Kuyrukta bekleyen komut var mı?
             if command_queue:
                 cmd = command_queue.pop(0)
 
-                # --- TRAFİK IŞIĞI SALDIRISI ---
                 if cmd == "HACK_LIGHTS":
                     try:
                         current = traci.trafficlight.getRedYellowGreenState("center")
@@ -169,7 +141,6 @@ def run_simulation():
                     except Exception as e:
                         print(f">>> [HATA] HACK_LIGHTS: {e}")
 
-                # --- ARAÇ KİLİTLEME ---
                 elif cmd == "HACK_VEHICLE":
                     try:
                         traci.vehicle.setColor("hedef_arac", (128, 0, 128, 255))
@@ -178,16 +149,13 @@ def run_simulation():
                     except Exception as e:
                         print(f">>> [BASARISIZ] HACK_VEHICLE: {e}")
 
-                # --- RANSOMWARE ---
                 elif cmd == "RANSOMWARE":
-                    print(">>> [KRİTİK] RANSOMWARE komutu alındı! Saldırı başlıyor...")
-                    # Ayrı thread'de çalıştır ki soket cevabı gönderilsin
+                    print(">>> [KRİTİK] RANSOMWARE komutu alındı!")
                     r_thread = threading.Thread(target=execute_ransomware)
                     r_thread.daemon = True
                     r_thread.start()
-                    break  # Ana döngüden çık, ransomware halleder
+                    # break kaldırıldı — simülasyon devam ediyor
 
-            # Simülasyonu bir adım ilerlet
             traci.simulationStep()
             time.sleep(0.05)
 

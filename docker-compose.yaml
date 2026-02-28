@@ -19,5 +19,5 @@ services:
   vehicle_controller:
     build: ./vehicle_controller
     ports:
-      - "2222:22"    # Host'tan 2222 portu ile erişilir (22 genelde dolu olur)
+      - "2222:22"    # Host'tan 2222 portu ile erişilir 
     container_name: vehicle_controller
