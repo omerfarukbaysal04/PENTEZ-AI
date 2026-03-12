@@ -23,10 +23,12 @@ class StrategicAgent:
            KURAL: mission_status 'ONGOING' değilse FINISH seç!
 
         1. ÖNCELİK — SADECE mission_status 'ONGOING' ise değerlendir:
-           - 'phase' == 'EXPLOIT' ise, hangi saldırıyı seçeceğine karar ver:
-             * 'vulns' içinde 'SSH_OPEN_WEAK_PASSWORD' varsa -> 'ATTACK_RANSOMWARE' SEÇ.
-             * 'vulns' içinde 'LOGIN_PAGE_FOUND' varsa        -> 'ATTACK_SQL' SEÇ.
-             * İkisi de varsa -> 'ATTACK_RANSOMWARE' SEÇ. (SSH daha kritik zafiyet)
+           - 'phase' == 'EXPLOIT' ise:
+             * ÖNCE 'selected_scenario' alanına bak. Değer varsa (null değilse) SADECE onu seç.
+             * 'selected_scenario' null ise vulns'a göre karar ver:
+               - 'SSH_OPEN_WEAK_PASSWORD'        -> 'ATTACK_RANSOMWARE'
+               - 'UNAUTHENTICATED_SPEED_CONTROL' -> 'ATTACK_SPEED_SPOOF'
+               - 'LOGIN_PAGE_FOUND'              -> 'ATTACK_SQL'
            - 'phase' == 'ANALYSIS' ise -> 'ANALYZE_WEB' SEÇ.
            - 'phase' == 'RECON'    ise -> 'SCAN_PORTS' SEÇ.
 
@@ -44,7 +46,7 @@ class StrategicAgent:
         }
 
         try:
-            response = requests.post(self.api_url, json=payload, timeout=60)
+            response = requests.post(self.api_url, json=payload, timeout=120)
             response.raise_for_status()
 
             raw_text      = response.json().get('response', '{}')

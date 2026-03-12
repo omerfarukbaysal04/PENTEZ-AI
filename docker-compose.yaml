@@ -15,9 +15,15 @@ services:
       - "host.docker.internal:host-gateway"
 
   # Zafiyetli Araç Kontrol Servisi
-  # Zafiyet: SSH açık, şifre zayıf (root:1234)
+  # Zafiyet 1: SSH açık, şifre zayıf (root:1234)
+  # Zafiyet 2: Port 444 kimlik doğrulamasız hız kontrol soketi
   vehicle_controller:
     build: ./vehicle_controller
     ports:
-      - "2222:22"    # Host'tan 2222 portu ile erişilir 
+      - "2222:22"    # SSH — ransomware saldırısı
+      - "444:444"    # Hız kontrol soketi — speed spoof saldırısı
     container_name: vehicle_controller
+    environment:
+      SECURITY_MODE: VULNERABLE   # SECURE veya VULNERABLE
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

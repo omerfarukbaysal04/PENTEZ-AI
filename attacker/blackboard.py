@@ -10,6 +10,7 @@ class Blackboard:
             "vulnerabilities": [],
             "logs":           [],
             "current_phase":  "RECON",
+            "selected_scenario": None,
             "mission_status": "ONGOING"
         }
 
@@ -52,7 +53,8 @@ class Blackboard:
             "ports":          self.state["open_ports"],
             "vulns":          self.state["vulnerabilities"],
             "urls":           self.state["target_urls"],
-            "mission_status": self.state["mission_status"],
+            "mission_status":      self.state["mission_status"],
+            "selected_scenario":   self.state.get("selected_scenario"),
             # Logların tamamı yerine sadece kritik flag'ler
             "system_compromised": has_compromised,
             "attack_blocked":     has_blocked,

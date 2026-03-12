@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 class ReconAgent:
     def __init__(self):
         # 2222: vehicle_controller SSH (docker mapped)
-        self.target_ports = [21, 22, 80, 443, 1234, 2222, 3306, 5000, 8080, 8813]
+        self.target_ports = [21, 22, 80, 443, 444, 1234, 2222, 3306, 5000, 8080, 8813]
 
     def scan_port(self, ip, port):
         try:
@@ -53,14 +53,29 @@ class ReconAgent:
             if 2222 in open_ports or 22 in open_ports:
                 if security_mode == "VULNERABLE":
                     print(f"🚨 [RECON] KRİTİK: SSH portu açık — zayıf şifre zafiyeti olabilir!")
-                    blackboard.update_key("vulnerabilities", ["SSH_OPEN_WEAK_PASSWORD"])
+                    vulns = blackboard.read_state().get("vulnerabilities", [])
+                    vulns.append("SSH_OPEN_WEAK_PASSWORD")
+                    blackboard.update_key("vulnerabilities", vulns)
                     blackboard.update_key("current_phase", "EXPLOIT")
                     print(f"📋 [RECON] Faz → EXPLOIT (SSH zafiyeti tespit edildi)")
                 else:
                     print(f"🛡️  [RECON] SSH portu açık ama SECURE modda brute force engellendi.")
                     blackboard.update_key("current_phase", "ANALYSIS")
                     print(f"📋 [RECON] Faz → ANALYSIS")
-            else:
+
+            if 444 in open_ports:
+                if security_mode == "VULNERABLE":
+                    print(f"🚨 [RECON] KRİTİK: Port 444 açık — kimlik doğrulamasız hız kontrol soketi!")
+                    vulns = blackboard.read_state().get("vulnerabilities", [])
+                    if "UNAUTHENTICATED_SPEED_CONTROL" not in vulns:
+                        vulns.append("UNAUTHENTICATED_SPEED_CONTROL")
+                    blackboard.update_key("vulnerabilities", vulns)
+                    blackboard.update_key("current_phase", "EXPLOIT")
+                    print(f"📋 [RECON] Faz → EXPLOIT (hız kontrol zafiyeti tespit edildi)")
+                else:
+                    print(f"🛡️  [RECON] Port 444 SECURE modda kapalı — zafiyet yok.")
+
+            if 444 not in open_ports and 2222 not in open_ports and 22 not in open_ports:
                 blackboard.update_key("current_phase", "ANALYSIS")
                 print(f"📋 [RECON] Faz → ANALYSIS")
         else:
@@ -71,7 +86,7 @@ class ReconAgent:
     def _identify_service(self, port):
         services = {
             21: "FTP", 22: "SSH", 80: "HTTP", 443: "HTTPS",
-            2222: "SSH (vehicle_controller)", 3306: "MySQL",
+            444: "Hız Kontrol Soketi (vehicle_controller)", 2222: "SSH (vehicle_controller)", 3306: "MySQL",
             5000: "Web Panel (Flask)", 8080: "HTTP-Alt", 8813: "SUMO TraCI"
         }
         return services.get(port, "Bilinmiyor")

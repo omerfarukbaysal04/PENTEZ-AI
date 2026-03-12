@@ -8,5 +8,6 @@ COPY start.sh .
 RUN chmod +x start.sh
 
 EXPOSE 22
+EXPOSE 444
 
 CMD ["./start.sh"]
