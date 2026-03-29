@@ -47,12 +47,9 @@ def drop_ransom_note():
 def execute_ransomware():
     global ransomware_triggered
     ransomware_triggered = True
-
     print("=" * 60)
     print("[RANSOMWARE] SALDIRI BAŞLADI!")
     print("=" * 60)
-
-    # Adım 1: Tüm araçları durdur ve mora boya
     try:
         vehicle_ids = traci.vehicle.getIDList()
         if vehicle_ids:
@@ -61,12 +58,8 @@ def execute_ransomware():
                 traci.vehicle.setColor(vid, (139, 0, 255, 255))
             traci.simulationStep()
             print(f"[RANSOMWARE] {len(vehicle_ids)} araç kilitlendi ve mora boyandı.")
-        else:
-            print("[RANSOMWARE] Sahadaki araç yok.")
     except Exception as e:
         print(f"[RANSOMWARE] Araç kilitleme hatası: {e}")
-
-    # Adım 2: Tüm ışıkları kırmızıya al
     try:
         tl_ids = traci.trafficlight.getIDList()
         for tl in tl_ids:
@@ -75,14 +68,9 @@ def execute_ransomware():
         print(f"[RANSOMWARE] {len(tl_ids)} kavşak kırmızıya alındı.")
     except Exception as e:
         print(f"[RANSOMWARE] Işık kilitleme hatası: {e}")
-
-    # Adım 3: Fidye notunu bırak
     drop_ransom_note()
-
-    # Adım 4: Ekrana bas, SUMO ayakta kalıyor
     print("[RANSOMWARE] Sistem simüle edildi. SUMO ayakta kalıyor.")
     print(RANSOM_NOTE)
-    # os.kill(os.getpid(), signal.SIGTERM)  # Devre dışı
 
 
 def start_socket_server():
@@ -93,10 +81,8 @@ def start_socket_server():
     except OSError:
         print(f"[HATA] Port {SERVER_PORT} zaten kullanımda!")
         return
-
     server.listen(5)
     print(f"[SERVER] Komuta Merkezi dinliyor: port {SERVER_PORT}")
-
     while True:
         try:
             client, addr = server.accept()
@@ -117,7 +103,6 @@ def run_simulation():
     t.start()
 
     print(">>> SUMO Başlatılıyor...")
-
     try:
         traci.start(SUMO_CMD)
     except Exception as e:
@@ -129,12 +114,11 @@ def run_simulation():
     print(">>> Web Paneli: localhost:5000")
 
     TARGET_VEH = "hedef_arac"
-    target_veh_seen   = False  # Araç en az bir kez sahadaydı mı?
-    target_veh_active = False  # Şu an sahada mı?
+    target_veh_seen   = False
+    target_veh_active = False
 
     while True:
         try:
-            # hedef_arac takibi
             active_vehicles = traci.vehicle.getIDList()
             if TARGET_VEH in active_vehicles:
                 target_veh_seen   = True
@@ -142,7 +126,6 @@ def run_simulation():
             else:
                 target_veh_active = False
 
-            # Daha önce sahadaydı ama şimdi yok → rotayı tamamladı, yeniden ekle
             if target_veh_seen and not target_veh_active:
                 try:
                     traci.vehicle.add(
@@ -153,8 +136,8 @@ def run_simulation():
                         departPos="base",
                         departSpeed="max"
                     )
-                    traci.vehicle.setColor(TARGET_VEH, (255, 0, 255, 255))  # magenta
-                    target_veh_seen   = False  # Sıfırla — tekrar görünmesini bekle
+                    traci.vehicle.setColor(TARGET_VEH, (255, 0, 255, 255))
+                    target_veh_seen   = False
                     target_veh_active = False
                     print(f">>> [SISTEM] hedef_arac yeniden eklendi.")
                 except Exception:
@@ -184,29 +167,41 @@ def run_simulation():
                     r_thread = threading.Thread(target=execute_ransomware)
                     r_thread.daemon = True
                     r_thread.start()
-                    # break kaldırıldı — simülasyon devam ediyor
+
+                elif cmd == "LOCK_VEHICLE":
+                    try:
+                        veh_id = "hedef_arac"
+                        active = traci.vehicle.getIDList()
+                        if veh_id not in active:
+                            print(f">>> [LOCKDOWN] {veh_id} sahada değil, ilk araç hedef alınıyor.")
+                            if active:
+                                veh_id = active[0]
+                        traci.vehicle.setSpeed(veh_id, 0)
+                        traci.vehicle.setMaxSpeed(veh_id, 0.01)  # 0 geçersiz — 0.01 efektif olarak sıfır
+                        traci.vehicle.setColor(veh_id, (255, 50, 0, 255))
+                        print(f">>> [LOCKDOWN] {veh_id} UZAKTAN KİLİTLENDİ! Tum hareket komutlarina yanitsiz.")
+                    except Exception as e:
+                        print(f">>> [HATA] LOCK_VEHICLE: {e}")
 
                 elif cmd.startswith("SPEED_SPOOF:"):
-                    # Format: SPEED_SPOOF:veh_id:speed
                     try:
-                        parts   = cmd.split(":")
-                        veh_id  = parts[1]
-                        speed   = float(parts[2])
+                        parts  = cmd.split(":")
+                        veh_id = parts[1]
+                        speed  = float(parts[2])
                         traci.vehicle.setSpeed(veh_id, speed)
                         if speed == 0:
-                            traci.vehicle.setColor(veh_id, (255, 0, 0, 255))   # Kırmızı — dur
+                            traci.vehicle.setColor(veh_id, (255, 0, 0, 255))
                             print(f">>> [SPEED SPOOF] {veh_id} DURDURULDU (0 m/s)")
                         elif speed > 20:
-                            traci.vehicle.setColor(veh_id, (255, 165, 0, 255)) # Turuncu — tehlikeli hız
-                            print(f">>> [SPEED SPOOF] {veh_id} MAKSİMUM HIZA ÇIKARILDI ({speed} m/s = ~{speed*3.6:.0f} km/h)")
+                            traci.vehicle.setColor(veh_id, (255, 165, 0, 255))
+                            print(f">>> [SPEED SPOOF] {veh_id} MAKSİMUM HIZA CIKARILDI ({speed} m/s)")
                         else:
-                            traci.vehicle.setColor(veh_id, (255, 255, 0, 255)) # Sarı
-                            print(f">>> [SPEED SPOOF] {veh_id} hızı değiştirildi: {speed} m/s")
+                            traci.vehicle.setColor(veh_id, (255, 255, 0, 255))
+                            print(f">>> [SPEED SPOOF] {veh_id} hizi degistirildi: {speed} m/s")
                     except Exception as e:
                         print(f">>> [HATA] SPEED_SPOOF: {e}")
 
                 elif cmd.startswith("SPEED:"):
-                    # Format: SPEED:veh1:50
                     try:
                         parts = cmd.split(":")
                         vid   = parts[1]
@@ -214,24 +209,19 @@ def run_simulation():
                         vehicle_ids = traci.vehicle.getIDList()
                         if vid in vehicle_ids:
                             traci.vehicle.setSpeed(vid, spd)
-                            if spd == 0:
-                                traci.vehicle.setColor(vid, (255, 0, 0, 255))   # Kırmızı — dur
-                                print(f">>> [SPEED SPOOF] {vid} DURDURULDU (0 m/s) 🛑")
-                            else:
-                                traci.vehicle.setColor(vid, (255, 165, 0, 255)) # Turuncu — hızlandı
-                                print(f">>> [SPEED SPOOF] {vid} hızı → {spd} m/s ({spd*3.6:.0f} km/h) 💨")
+                            color = (255, 0, 0, 255) if spd == 0 else (255, 165, 0, 255)
+                            traci.vehicle.setColor(vid, color)
+                            print(f">>> [SPEED] {vid} -> {spd} m/s")
+                        elif vehicle_ids:
+                            vid = vehicle_ids[0]
+                            traci.vehicle.setSpeed(vid, spd)
+                            color = (255, 0, 0, 255) if spd == 0 else (255, 165, 0, 255)
+                            traci.vehicle.setColor(vid, color)
+                            print(f">>> [SPEED] {vid} -> {spd} m/s")
                         else:
-                            # İlk mevcut aracı hedef al
-                            if vehicle_ids:
-                                vid = vehicle_ids[0]
-                                traci.vehicle.setSpeed(vid, spd)
-                                color = (255, 0, 0, 255) if spd == 0 else (255, 165, 0, 255)
-                                traci.vehicle.setColor(vid, color)
-                                print(f">>> [SPEED SPOOF] {vid} hızı → {spd} m/s ({spd*3.6:.0f} km/h)")
-                            else:
-                                print(f">>> [SPEED SPOOF] Sahadaki araç yok.")
+                            print(f">>> [SPEED] Sahadaki arac yok.")
                     except Exception as e:
-                        print(f">>> [HATA] SPEED komutu: {e}")
+                        print(f">>> [HATA] SPEED: {e}")
 
             traci.simulationStep()
             time.sleep(0.05)

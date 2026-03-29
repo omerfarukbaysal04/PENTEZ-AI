@@ -27,6 +27,7 @@ class StrategicAgent:
              * ÖNCE 'selected_scenario' alanına bak. Değer varsa (null değilse) SADECE onu seç.
              * 'selected_scenario' null ise vulns'a göre karar ver:
                - 'SSH_OPEN_WEAK_PASSWORD'        -> 'ATTACK_RANSOMWARE'
+               - 'WEBPANEL_LOCKDOWN'             -> 'ATTACK_WEBPANEL_LOCKDOWN'
                - 'UNAUTHENTICATED_SPEED_CONTROL' -> 'ATTACK_SPEED_SPOOF'
                - 'LOGIN_PAGE_FOUND'              -> 'ATTACK_SQL'
            - 'phase' == 'ANALYSIS' ise -> 'ANALYZE_WEB' SEÇ.

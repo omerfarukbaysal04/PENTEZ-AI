@@ -339,6 +339,21 @@ DASHBOARD_PAGE = COMMON_STYLE + """
             </div>
         </div>
 
+        <!-- ARAÇ YÖNETİM LİNKİ -->
+        <div class="grid-full">
+            <div class="card" style="border-color:#ff9900;">
+                <h3 style="color:#ff9900; margin:0 0 10px 0;">🚗 ARAÇ YÖNETİM SİSTEMİ</h3>
+                <p style="color:#999; font-size:13px; margin:0 0 10px 0;">
+                    Bağlı araçları görüntüle ve uzaktan kontrol et.
+                </p>
+                <a href="/vehicles" style="text-decoration:none;">
+                    <button class="btn btn-lock" style="margin-top:0;">
+                        🔗 ARAÇ PANELİNE GİT
+                    </button>
+                </a>
+            </div>
+        </div>
+
         <!-- KONSOL -->
         <div class="console-box">
             <span style="color:#444;">root@admin-panel:~$</span>
@@ -346,6 +361,67 @@ DASHBOARD_PAGE = COMMON_STYLE + """
             <span style="margin-left:4px; opacity:.7;">▌</span>
         </div>
 
+    </div>
+</body>
+</html>
+"""
+
+
+# ── ARAÇ YÖNETİM SAYFASI ──
+VEHICLES_PAGE = COMMON_STYLE + """
+<html>
+<head><title>Araç Yönetim Paneli</title></head>
+<body>
+    <div class="scanline"></div>
+
+    <div class="topbar">
+        <div class="topbar-inner">
+            <div>
+                <h2 style="margin:0; font-size:22px; text-shadow:0 0 10px rgba(0,255,65,.4);">
+                    ARAÇ YÖNETİM SİSTEMİ
+                </h2>
+                <span style="color:#555; font-size:11px; font-family:monospace;">VEHICLE MANAGEMENT // ADMIN_ACCESS</span>
+            </div>
+            <div style="text-align:right;">
+                <div style="color:#00ff41; font-weight:bold; font-family:monospace;">
+                    <span class="status-dot"></span>SİSTEM AKTİF
+                </div>
+                <a href="/" style="color:#555; font-size:11px; font-family:monospace;">← ANA PANEL</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="grid-full">
+            <div class="card">
+                <h3 style="color:#ff9900; border-bottom:1px solid #2a2a2a; padding-bottom:10px; margin-top:0;">
+                    🚗 ARAÇ KONTROL PANELİ — hedef_arac (34 TEZ 2026)
+                </h3>
+                <div class="card-body">
+                    <p style="color:#999; font-size:14px; margin:0 0 6px;">
+                        Araç kontrol sistemine uzaktan erişim sağlandı. Aracı kilitleyerek tüm hareket
+                        komutlarını devre dışı bırakabilirsiniz. Araç trafikte ani duruş yaparak anarşiye sebep olur.
+                    </p>
+                    <div class="info-box" style="color:#ff9900;">
+                        ARAÇ ID &nbsp;: hedef_arac<br>
+                        PLAKA &nbsp;&nbsp;: 34 TEZ 2026<br>
+                        DURUM &nbsp;&nbsp;: AKTİF — Seyir Halinde<br>
+                        ZAFİYET : Uzaktan Komut Enjeksiyonu (Port 9999)
+                    </div>
+                </div>
+                <form method="POST" action="/vehicles/lock">
+                    <button type="submit" class="btn btn-lock">
+                        🔒 ARACI UZAKTAN KİLİTLE
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="console-box">
+            <span style="color:#444;">root@vehicle-mgmt:~$</span>
+            <span> {{ message }}</span>
+            <span style="margin-left:4px; opacity:.7;">▌</span>
+        </div>
     </div>
 </body>
 </html>
@@ -452,6 +528,25 @@ def send_command():
         return render_template_string(DASHBOARD_PAGE, message=msg)
     msg = send_to_manager(cmd)
     return render_template_string(DASHBOARD_PAGE, message=msg)
+
+@app.route('/vehicles', methods=['GET'])
+def vehicles():
+    # SECURE modda: sadece oturum açmış kullanıcılar erişebilir
+    # Basit simülasyon için referer kontrolü yapıyoruz
+    if SECURITY_MODE == "SECURE":
+        referer = request.headers.get('Referer', '')
+        if 'localhost:5000' not in referer and '127.0.0.1:5000' not in referer:
+            return render_template_string(ERROR_PAGE)
+    return render_template_string(VEHICLES_PAGE, message="Araç yönetim sistemine bağlanıldı.")
+
+@app.route('/vehicles/lock', methods=['POST'])
+def lock_vehicle():
+    if SECURITY_MODE == "SECURE":
+        msg = "[SECURE] Araç kilitleme komutu güvenlik sistemi tarafından engellendi!"
+        return render_template_string(VEHICLES_PAGE, message=msg)
+    msg = send_to_manager("LOCK_VEHICLE")
+    return render_template_string(VEHICLES_PAGE,
+        message="[LOCKDOWN] hedef_arac kilitlendi! Araç tüm hareket komutlarına yanıtsız.")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)

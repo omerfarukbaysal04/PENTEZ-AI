@@ -42,6 +42,7 @@ SCENARIO_MAP = {
     "SSH_OPEN_WEAK_PASSWORD":       ("ATTACK_RANSOMWARE",   "Ransomware (SSH Brute Force)"),
     "UNAUTHENTICATED_SPEED_CONTROL":("ATTACK_SPEED_SPOOF",  "Speed Spoof (Hız Kontrolü Ele Geçirme)"),
     "LOGIN_PAGE_FOUND":             ("ATTACK_SQL",          "SQL Injection (Web Panel)"),
+    "WEBPANEL_LOCKDOWN":            ("ATTACK_WEBPANEL_LOCKDOWN", "Web Panel Lockdown (Araç Kilitleme)"),
 }
 
 def ask_user_scenario(vulns):
@@ -189,6 +190,10 @@ def main():
 
             elif decision['decision'] == "ATTACK_SPEED_SPOOF":
                 print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (Speed Spoof — Hız Kontrol Ele Geçirme)...{Colors.ENDC}")
+                exploit_agent.run(bb)
+
+            elif decision['decision'] == "ATTACK_WEBPANEL_LOCKDOWN":
+                print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (Web Panel Lockdown — Araç Kilitleme)...{Colors.ENDC}")
                 exploit_agent.run(bb)
 
             elif decision['decision'] == "FINISH":
