@@ -69,6 +69,8 @@ class ReconAgent:
                     vulns = blackboard.read_state().get("vulnerabilities", [])
                     if "UNAUTHENTICATED_SPEED_CONTROL" not in vulns:
                         vulns.append("UNAUTHENTICATED_SPEED_CONTROL")
+                    if "MOVEMENT_HACK_VULN" not in vulns:
+                        vulns.append("MOVEMENT_HACK_VULN")
                     blackboard.update_key("vulnerabilities", vulns)
                     blackboard.update_key("current_phase", "EXPLOIT")
                     print(f"📋 [RECON] Faz → EXPLOIT (hız kontrol zafiyeti tespit edildi)")

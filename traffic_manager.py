@@ -183,6 +183,51 @@ def run_simulation():
                     except Exception as e:
                         print(f">>> [HATA] LOCK_VEHICLE: {e}")
 
+                elif cmd.startswith("MOVEMENT_LANE:"):
+                    # Format: MOVEMENT_LANE:veh_id:lane_index
+                    try:
+                        parts  = cmd.split(":")
+                        veh_id = parts[1]
+                        lane   = int(parts[2])
+                        active = traci.vehicle.getIDList()
+                        if veh_id not in active:
+                            print(f">>> [MOVEMENT HACK] {veh_id} sahada degil, serit degistirme iptal.")
+                        else:
+                            traci.vehicle.changeLane(veh_id, lane, 2000)
+                            traci.vehicle.setColor(veh_id, (255, 0, 255, 255))  # magenta
+                            print(f">>> [MOVEMENT HACK] {veh_id} serit {lane}'e zorla degistiriliyor!")
+                    except Exception as e:
+                        print(f">>> [HATA] MOVEMENT_LANE: {e}")
+
+                elif cmd.startswith("MOVEMENT_ROUTE:"):
+                    # Format: MOVEMENT_ROUTE:veh_id:route_id
+                    # Aracın bulunduğu edge'e göre uygun kaos rotasını seç
+                    EDGE_TO_ROUTE = {
+                        "otoban_sol_1":    "rota_movement_kaos",   # otoban_sol_1 → otoban_yukari1
+                        "otoban_sag_1":    "rota_movement_kaos2",  # otoban_sag_1 → otoban_asagi_1
+                        "sehir_solgiris":  "rota_movement_kaos3",  # sehir_solgiris → ara_sol_1 → ara_merkez_1 → ara_sag_1
+                        "ara_sol_1":       "rota_movement_kaos3",
+                        "ara_merkez_1":    "rota_movement_kaos3",
+                        "ara_sol_2":       "rota_movement_kaos4",  # ara_sol_2 → sehir_solcikis → sehir_sagcikis
+                        "sehir_solcikis":  "rota_movement_kaos4",
+                    }
+                    try:
+                        parts  = cmd.split(":")
+                        veh_id = parts[1]
+                        active = traci.vehicle.getIDList()
+                        if veh_id not in active:
+                            print(f">>> [MOVEMENT HACK] {veh_id} sahada degil, rota degistirme iptal.")
+                        else:
+                            current_edge = traci.vehicle.getRoadID(veh_id)
+                            route_id     = EDGE_TO_ROUTE.get(current_edge, parts[2])
+                            print(f">>> [MOVEMENT HACK] {veh_id} su an: {current_edge} → rota: {route_id}")
+                            traci.vehicle.setRouteID(veh_id, route_id)
+                            traci.vehicle.setColor(veh_id, (255, 0, 0, 255))
+                            traci.vehicle.setMaxSpeed(veh_id, 50)
+                            print(f">>> [MOVEMENT HACK] {veh_id} KAOS ROTASINA SOKULDU!")
+                    except Exception as e:
+                        print(f">>> [HATA] MOVEMENT_ROUTE: {e}")
+
                 elif cmd.startswith("SPEED_SPOOF:"):
                     try:
                         parts  = cmd.split(":")

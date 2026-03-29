@@ -9,6 +9,13 @@
 
     <route id="rota_kaos" edges="otoban_yukari_2 otoban_asagi_1"/>
 
+    <!-- Movement Hack Kaos Rotaları -->
+    <route id="rota_movement_kaos"  edges="otoban_sol_1 otoban_yukari1"/>
+    <route id="rota_movement_kaos2" edges="otoban_sag_1 otoban_asagi_1"/>
+    <route id="rota_movement_kaos3" edges="ara_sol_1 ara_merkez_1 ara_sag_1 sehir_saggiris otoban_sag_2 otoban_sol_2"/>
+    <route id="rota_movement_kaos4" edges="sehir_solcikis sehir_sagcikis sehir_merkez_ust_2 sehir_saggiris otoban_sag_2"/>
+
+
 
     <flow id="akis_sehir" type="binek" route="rota_sehir" begin="0" end="1000" probability="0.3" departPos="last"/>
     <flow id="akis_sokak" type="binek" route="rota_kurban" begin="0" end="1000" probability="0.1" departPos="last"/>
