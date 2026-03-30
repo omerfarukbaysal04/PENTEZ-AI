@@ -29,7 +29,6 @@ class StrategicAgent:
                - 'SSH_OPEN_WEAK_PASSWORD'        -> 'ATTACK_RANSOMWARE'
                - 'WEBPANEL_LOCKDOWN'             -> 'ATTACK_WEBPANEL_LOCKDOWN'
                - 'UNAUTHENTICATED_SPEED_CONTROL' -> 'ATTACK_SPEED_SPOOF'
-               - 'MOVEMENT_HACK_VULN'             -> 'ATTACK_MOVEMENT_HACK'
                - 'LOGIN_PAGE_FOUND'              -> 'ATTACK_SQL'
            - 'phase' == 'ANALYSIS' ise -> 'ANALYZE_WEB' SEÇ.
            - 'phase' == 'RECON'    ise -> 'SCAN_PORTS' SEÇ.

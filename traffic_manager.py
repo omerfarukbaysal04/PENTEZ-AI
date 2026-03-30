@@ -199,18 +199,20 @@ def run_simulation():
                     except Exception as e:
                         print(f">>> [HATA] MOVEMENT_LANE: {e}")
 
-                elif cmd.startswith("MOVEMENT_ROUTE:"):
-                    # Format: MOVEMENT_ROUTE:veh_id:route_id
-                    # Aracın bulunduğu edge'e göre uygun kaos rotasını seç
-                    EDGE_TO_ROUTE = {
-                        "otoban_sol_1":    "rota_movement_kaos",   # otoban_sol_1 → otoban_yukari1
-                        "otoban_sag_1":    "rota_movement_kaos2",  # otoban_sag_1 → otoban_asagi_1
-                        "sehir_solgiris":  "rota_movement_kaos3",  # sehir_solgiris → ara_sol_1 → ara_merkez_1 → ara_sag_1
-                        "ara_sol_1":       "rota_movement_kaos3",
-                        "ara_merkez_1":    "rota_movement_kaos3",
-                        "ara_sol_2":       "rota_movement_kaos4",  # ara_sol_2 → sehir_solcikis → sehir_sagcikis
-                        "sehir_solcikis":  "rota_movement_kaos4",
-                    }
+                # elif cmd.startswith("MOVEMENT_ROUTE:"):
+                #     # Format: MOVEMENT_ROUTE:veh_id:route_id
+                #     # Aracın bulunduğu edge'e göre uygun kaos rotasını seç
+                #     EDGE_TO_ROUTE = {
+                #         "otoban_sol_1":    "rota_movement_kaos",   # otoban_sol_1 → otoban_yukari1
+                #         "otoban_sag_1":    "rota_movement_kaos2",  # otoban_sag_1 → otoban_asagi_1
+                #         "sehir_solgiris":  "rota_movement_kaos3",  # sehir_solgiris → ara_sol_1 → ara_merkez_1 → ara_sag_1
+                #         "ara_sol_1":       "rota_movement_kaos3",
+                #         "ara_merkez_1":    "rota_movement_kaos3",
+                #         "ara_sol_2":       "rota_movement_kaos4",  # ara_sol_2 → sehir_solcikis → sehir_sagcikis
+                #         "sehir_solcikis":  "rota_movement_kaos4",
+                #     
+                #   MOVEMENT HACK senaryosu şimdilik pasif, çünkü bazı durumlarda araç sahada olmayabiliyor ve bu da hatalara yol açıyor. İleride daha sağlam bir kontrol mekanizması ekleyerek tekrar aktif hale getirebilirim.
+                # }
                     try:
                         parts  = cmd.split(":")
                         veh_id = parts[1]

@@ -17,9 +17,10 @@ start "Hacker Paneli" docker-compose up --build
 echo [2/4] Web sunucusu hazirlaniyor (8 sn)...
 timeout /t 8 >nul
 
-:: 3. Tarayıcıyı Aç
-echo [3/4] Admin Paneli tarayicida aciliyor...
-start http://localhost:5000
+@REM :: 3. Tarayıcıyı Aç
+@REM echo [3/4] Admin Paneli tarayicida aciliyor...
+@REM start http://localhost:5000
+@REM Geçici olarak tarayıcı açılmasını iptal ettim, çünkü bazı durumlarda gereksiz olabilir.
 
 :: 4. Trafik Yöneticisini Başlat (SUMO'yu bu açacak)
 echo [4/4] Trafik Yoneticisi baslatiliyor (SUMO)...

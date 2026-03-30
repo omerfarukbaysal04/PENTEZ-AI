@@ -41,7 +41,7 @@ def print_banner():
 SCENARIO_MAP = {
     "SSH_OPEN_WEAK_PASSWORD":       ("ATTACK_RANSOMWARE",   "Ransomware (SSH Brute Force)"),
     "UNAUTHENTICATED_SPEED_CONTROL":("ATTACK_SPEED_SPOOF",  "Speed Spoof (Hız Kontrolü Ele Geçirme)"),
-    "MOVEMENT_HACK_VULN":           ("ATTACK_MOVEMENT_HACK","Movement Hack (Rota/Serit Manipülasyonu)"),
+    # "MOVEMENT_HACK_VULN":           ("ATTACK_MOVEMENT_HACK","Movement Hack (Rota/Serit Manipülasyonu)"),
     "LOGIN_PAGE_FOUND":             ("ATTACK_SQL",          "SQL Injection (Web Panel)"),
     "WEBPANEL_LOCKDOWN":            ("ATTACK_WEBPANEL_LOCKDOWN", "Web Panel Lockdown (Araç Kilitleme)"),
 }
@@ -180,7 +180,6 @@ def main():
                 web_agent.run(bb)
 
 
-
             elif decision['decision'] == "ATTACK_SQL":
                 print(f"{Colors.FAIL}>>> EXPLOIT AJANI aktif (SQL Injection)...{Colors.ENDC}")
                 exploit_agent.run(bb)
@@ -193,9 +192,9 @@ def main():
                 print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (Speed Spoof — Hız Kontrol Ele Geçirme)...{Colors.ENDC}")
                 exploit_agent.run(bb)
 
-            elif decision['decision'] == "ATTACK_MOVEMENT_HACK":
-                print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (Movement Hack — Rota/Serit Manipülasyonu)...{Colors.ENDC}")
-                exploit_agent.run(bb)
+            # elif decision['decision'] == "ATTACK_MOVEMENT_HACK":
+            #     print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (Movement Hack — Rota/Serit Manipülasyonu)...{Colors.ENDC}")
+            #     exploit_agent.run(bb)
 
             elif decision['decision'] == "ATTACK_WEBPANEL_LOCKDOWN":
                 print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (Web Panel Lockdown — Araç Kilitleme)...{Colors.ENDC}")
