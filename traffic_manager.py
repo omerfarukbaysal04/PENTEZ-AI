@@ -5,12 +5,13 @@ import threading
 import sys
 import os
 import signal
+import random
 
 # --- AYARLAR ---
 SUMO_CMD = ["sumo-gui", "-c", "simulation.sumocfg", "--start"]
 
 SERVER_HOST = '0.0.0.0'
-SERVER_PORT = 9999
+SERVER_PORT = 444
 
 RANSOM_NOTE = """
 ╔══════════════════════════════════════════════════════════╗
@@ -183,23 +184,23 @@ def run_simulation():
                     except Exception as e:
                         print(f">>> [HATA] LOCK_VEHICLE: {e}")
 
-                elif cmd.startswith("MOVEMENT_LANE:"):
-                    # Format: MOVEMENT_LANE:veh_id:lane_index
-                    try:
-                        parts  = cmd.split(":")
-                        veh_id = parts[1]
-                        lane   = int(parts[2])
-                        active = traci.vehicle.getIDList()
-                        if veh_id not in active:
-                            print(f">>> [MOVEMENT HACK] {veh_id} sahada degil, serit degistirme iptal.")
-                        else:
-                            traci.vehicle.changeLane(veh_id, lane, 2000)
-                            traci.vehicle.setColor(veh_id, (255, 0, 255, 255))  # magenta
-                            print(f">>> [MOVEMENT HACK] {veh_id} serit {lane}'e zorla degistiriliyor!")
-                    except Exception as e:
-                        print(f">>> [HATA] MOVEMENT_LANE: {e}")
+                # elif cmd.startswith("MOVEMENT_LANE:"):
+                #     # Format: MOVEMENT_LANE:veh_id:lane_index
+                #     try:
+                #         parts  = cmd.split(":")
+                #         veh_id = parts[1]
+                #         lane   = int(parts[2])
+                #         active = traci.vehicle.getIDList()
+                #         if veh_id not in active:
+                #             print(f">>> [MOVEMENT HACK] {veh_id} sahada degil, serit degistirme iptal.")
+                #         else:
+                #             traci.vehicle.changeLane(veh_id, lane, 2000)
+                #             traci.vehicle.setColor(veh_id, (255, 0, 255, 255))  # magenta
+                #             print(f">>> [MOVEMENT HACK] {veh_id} serit {lane}'e zorla degistiriliyor!")
+                #     except Exception as e:
+                #         print(f">>> [HATA] MOVEMENT_LANE: {e}")
 
-                # elif cmd.startswith("MOVEMENT_ROUTE:"):
+                # # elif cmd.startswith("MOVEMENT_ROUTE:"):
                 #     # Format: MOVEMENT_ROUTE:veh_id:route_id
                 #     # Aracın bulunduğu edge'e göre uygun kaos rotasını seç
                 #     EDGE_TO_ROUTE = {
@@ -213,22 +214,45 @@ def run_simulation():
                 #     
                 #   MOVEMENT HACK senaryosu şimdilik pasif, çünkü bazı durumlarda araç sahada olmayabiliyor ve bu da hatalara yol açıyor. İleride daha sağlam bir kontrol mekanizması ekleyerek tekrar aktif hale getirebilirim.
                 # }
+                    # try:
+                    #     parts  = cmd.split(":")
+                    #     veh_id = parts[1]
+                    #     active = traci.vehicle.getIDList()
+                    #     if veh_id not in active:
+                    #         print(f">>> [MOVEMENT HACK] {veh_id} sahada degil, rota degistirme iptal.")
+                    #     else:
+                    #         current_edge = traci.vehicle.getRoadID(veh_id)
+                    #         route_id     = EDGE_TO_ROUTE.get(current_edge, parts[2])
+                    #         print(f">>> [MOVEMENT HACK] {veh_id} su an: {current_edge} → rota: {route_id}")
+                    #         traci.vehicle.setRouteID(veh_id, route_id)
+                    #         traci.vehicle.setColor(veh_id, (255, 0, 0, 255))
+                    #         traci.vehicle.setMaxSpeed(veh_id, 50)
+                    #         print(f">>> [MOVEMENT HACK] {veh_id} KAOS ROTASINA SOKULDU!")
+                    # except Exception as e:
+                    #     print(f">>> [HATA] MOVEMENT_ROUTE: {e}")
+
+                elif cmd.startswith("FAKE_VEHICLE"):
+                    print(f"!!! DEBUG: FAKE_VEHICLE KOMUTU ALINDI !!!")
                     try:
-                        parts  = cmd.split(":")
-                        veh_id = parts[1]
-                        active = traci.vehicle.getIDList()
-                        if veh_id not in active:
-                            print(f">>> [MOVEMENT HACK] {veh_id} sahada degil, rota degistirme iptal.")
-                        else:
-                            current_edge = traci.vehicle.getRoadID(veh_id)
-                            route_id     = EDGE_TO_ROUTE.get(current_edge, parts[2])
-                            print(f">>> [MOVEMENT HACK] {veh_id} su an: {current_edge} → rota: {route_id}")
-                            traci.vehicle.setRouteID(veh_id, route_id)
-                            traci.vehicle.setColor(veh_id, (255, 0, 0, 255))
-                            traci.vehicle.setMaxSpeed(veh_id, 50)
-                            print(f">>> [MOVEMENT HACK] {veh_id} KAOS ROTASINA SOKULDU!")
+                        # SUMO'daki mevcut rotaları al
+                        active_routes = traci.route.getIDList()
+                        if not active_routes:
+                            active_routes = ["rota_kurban"]
+                            
+                        # 50 adet sahte V2X sinyali (gri araç) ekle
+                        for i in range(50):
+                            g_id = f"sybil_{int(time.time())}_{i}"
+                            r_id = random.choice(active_routes)
+                            try:
+                                traci.vehicle.add(vehID=g_id, routeID=r_id, typeID="binek")
+                                traci.vehicle.setColor(g_id, (128, 128, 128, 255))
+                                # Her araçtan sonra 0.05 saniye bekle ki sistem sarı araçları da alabilsin
+                                time.sleep(0.05) 
+                            except Exception:
+                                pass
+                        print(">>> [UYGULANDI] FAKE_VEHICLE: V2X Sybil Attack! 50 sahte araç sinyali ağa basıldı.")
                     except Exception as e:
-                        print(f">>> [HATA] MOVEMENT_ROUTE: {e}")
+                        print(f">>> [HATA] FAKE_VEHICLE: {e}")
 
                 elif cmd.startswith("SPEED_SPOOF:"):
                     try:

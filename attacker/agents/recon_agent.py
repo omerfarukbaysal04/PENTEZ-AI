@@ -69,6 +69,8 @@ class ReconAgent:
                     vulns = blackboard.read_state().get("vulnerabilities", [])
                     if "UNAUTHENTICATED_SPEED_CONTROL" not in vulns:
                         vulns.append("UNAUTHENTICATED_SPEED_CONTROL")
+                    if "UNAUTHENTICATED_VEHICLE_INJECTION" not in vulns:
+                        vulns.append("UNAUTHENTICATED_VEHICLE_INJECTION")
                     # if "MOVEMENT_HACK_VULN" not in vulns:
                     #     vulns.append("MOVEMENT_HACK_VULN")
                     blackboard.update_key("vulnerabilities", vulns)
@@ -88,7 +90,7 @@ class ReconAgent:
     def _identify_service(self, port):
         services = {
             21: "FTP", 22: "SSH", 80: "HTTP", 443: "HTTPS",
-            444: "Hız Kontrol Soketi (vehicle_controller)", 2222: "SSH (vehicle_controller)", 3306: "MySQL",
+            444: "Vehicle control socket (vehicle_controller)", 2222: "SSH", 3306: "MySQL",
             5000: "Web Panel (Flask)", 8080: "HTTP-Alt", 8813: "SUMO TraCI"
         }
         return services.get(port, "Bilinmiyor")

@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 # --- AYARLAR ---
 MANAGER_HOST = "host.docker.internal"
-MANAGER_PORT = 9999
+MANAGER_PORT = 444
 
 # --- GÜVENLİK MODU ---
 SECURITY_MODE = os.environ.get("SECURITY_MODE", "VULNERABLE").upper()

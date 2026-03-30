@@ -44,6 +44,7 @@ SCENARIO_MAP = {
     # "MOVEMENT_HACK_VULN":           ("ATTACK_MOVEMENT_HACK","Movement Hack (Rota/Serit Manipülasyonu)"),
     "LOGIN_PAGE_FOUND":             ("ATTACK_SQL",          "SQL Injection (Web Panel)"),
     "WEBPANEL_LOCKDOWN":            ("ATTACK_WEBPANEL_LOCKDOWN", "Web Panel Lockdown (Araç Kilitleme)"),
+    "UNAUTHENTICATED_VEHICLE_INJECTION": ("ATTACK_FAKE_VEHICLE", "Fake Vehicle (Sybil)"),
 }
 
 def ask_user_scenario(vulns):
@@ -198,6 +199,10 @@ def main():
 
             elif decision['decision'] == "ATTACK_WEBPANEL_LOCKDOWN":
                 print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (Web Panel Lockdown — Araç Kilitleme)...{Colors.ENDC}")
+                exploit_agent.run(bb)
+            
+            elif decision['decision'] == "ATTACK_FAKE_VEHICLE":
+                print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (Fake Vehicle — Sybil)...{Colors.ENDC}")
                 exploit_agent.run(bb)
 
             elif decision['decision'] == "FINISH":
