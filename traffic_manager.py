@@ -234,23 +234,39 @@ def run_simulation():
                 elif cmd.startswith("FAKE_VEHICLE"):
                     print(f"!!! DEBUG: FAKE_VEHICLE KOMUTU ALINDI !!!")
                     try:
-                        # SUMO'daki mevcut rotaları al
-                        active_routes = traci.route.getIDList()
-                        if not active_routes:
-                            active_routes = ["rota_kurban"]
-                            
-                        # 50 adet sahte V2X sinyali (gri araç) ekle
+                        target_edge = "otoban_sag_1" 
+                        
+                        # 1. KRİTİK ADIM: Araca o yolu kapsayan geçici bir rota tanımla
+                        # Bu, SUMO'nun "bu yol rotasında yok" hatasını engeller.
+                        try:
+                            traci.route.add("temp_sybil_route", [target_edge])
+                        except:
+                            pass # Rota zaten varsa hata vermesin
+
+                        print(f">>> [UYGULANDI] {target_edge} yoluna bariyer kuruluyor...")
+
                         for i in range(50):
-                            g_id = f"sybil_{int(time.time())}_{i}"
-                            r_id = random.choice(active_routes)
+                            g_id = f"sybil_block_{int(time.time())}_{i}"
                             try:
-                                traci.vehicle.add(vehID=g_id, routeID=r_id, typeID="binek")
+                                # 2. Aracı bu geçici rota ile ekle
+                                traci.vehicle.add(vehID=g_id, routeID="temp_sybil_route", typeID="binek")
+                                
+                                spawn_pos = 2.0 + (i * 7.0)
+                                
+                                # 3. Şimdi moveTo güvenle çalışacaktır
+                                traci.vehicle.moveTo(g_id, target_edge + "_0", spawn_pos) 
+                                
+                                traci.vehicle.setSpeed(g_id, 0)
                                 traci.vehicle.setColor(g_id, (128, 128, 128, 255))
-                                # Her araçtan sonra 0.05 saniye bekle ki sistem sarı araçları da alabilsin
-                                time.sleep(0.05) 
-                            except Exception:
+                            except Exception as inner_e:
+                                # print(f"Araç ekleme hatası: {inner_e}")
                                 pass
-                        print(">>> [UYGULANDI] FAKE_VEHICLE: V2X Sybil Attack! 50 sahte araç sinyali ağa basıldı.")
+                        
+                        print(f">>> [TAMAMLANDI] Yol kilitlendi.")
+                    except Exception as e:
+                        print(f">>> [HATA] FAKE_VEHICLE: {e}")
+                        
+                        print(">>> [TAMAMLANDI] Yol kilitlendi. Gerçek araçlar için geçiş engellendi.")
                     except Exception as e:
                         print(f">>> [HATA] FAKE_VEHICLE: {e}")
 
