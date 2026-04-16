@@ -20,7 +20,7 @@ timeout /t 8 >nul
 @REM :: 3. Tarayıcıyı Aç
 @REM echo [3/4] Admin Paneli tarayicida aciliyor...
 @REM start http://localhost:5000
-@REM Geçici olarak tarayıcı açılmasını iptal ettim, çünkü bazı durumlarda gereksiz olabilir.
+@REM @REM Geçici olarak tarayıcı açılmasını iptal ettim, çünkü bazı durumlarda gereksiz olabilir.
 
 :: 4. Trafik Yöneticisini Başlat (SUMO'yu bu açacak)
 echo [4/4] Trafik Yoneticisi baslatiliyor (SUMO)...

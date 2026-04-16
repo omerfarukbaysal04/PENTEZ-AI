@@ -10,6 +10,7 @@ try:
     from agents.web_agent import WebAnalysisAgent
     from agents.exploit_agent import ExploitAgent
     from agents.ransomware_agent import RansomwareAgent
+    from agents.reporting_agent import ReportingAgent
 except ImportError as e:
     print(f"HATA: Modüller bulunamadı! {e}")
     sys.exit(1)
@@ -217,6 +218,25 @@ def main():
 
     except KeyboardInterrupt:
         print(f"\n{Colors.FAIL}[!] Kullanıcı tarafından durduruldu.{Colors.ENDC}")
+    
+    logs=bb.read_state().get("logs", [])
+
+    if logs:
+        print(f"\n{Colors.WARNING}{'='*55}{Colors.ENDC}")
+        print(f"{Colors.WARNING}  SİMÜLASYON SONLANDI — RAPORLAMA FAZI{Colors.ENDC}")
+        print(f"{Colors.WARNING}{'='*55}{Colors.ENDC}")
+        
+        cevap = input(f"{Colors.CYAN}>>> PENTEZ-AI Profesyonel Sızma Testi Raporu oluşturulsun mu? (e/h): {Colors.ENDC}").strip().lower()
+        
+        if cevap == 'e':
+            print(f"\n{Colors.GREEN}>>> RAPORLAMA AJANI (LLM) aktif ediliyor...{Colors.ENDC}")
+            # Ajanı başlat (Kullanıcının başta seçtiği model parametresiyle)
+            raportor = ReportingAgent(model_name=args.model)
+            raportor.generate_report(bb)
+        else:
+            print(f"{Colors.BLUE}>>> Rapor oluşturma adımı atlandı.{Colors.ENDC}")
+    
+    print(f"\n{Colors.HEADER}>>> PENTEZ-AI Kapatılıyor. İyi günler!{Colors.ENDC}")
 
 if __name__ == "__main__":
     main()
