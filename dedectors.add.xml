@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2026-02-02T14:11:59.793555+03:00 by Eclipse SUMO netedit 1.25.0
+<!-- generated on 2026-04-17T17:04:46.152708+03:00 by Eclipse SUMO netedit 1.25.0
 -->
 
 <additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
     <!-- Detectors -->
-    <inductionLoop id="sensor_kavsak" lane="otoban_sol_1_2" pos="-1.00" period="300.00" file="e1_0.xml"/>
-    <inductionLoop id="sensor_otoban_1" lane="otoban_sol_1_2" pos="100.00" period="300.00" file="e1_1.xml"/>
+    <laneAreaDetector id="e2_ana_0" lane="otoban_sol_1_0" pos="284.45" length="50.00" friendlyPos="1" period="300.00" file="e2_3.xml"/>
+    <laneAreaDetector id="e2_ana_1" lane="otoban_sol_1_1" pos="284.45" length="50.00" friendlyPos="1" period="300.00" file="e2_0.xml"/>
+    <laneAreaDetector id="e2_ana_2" lane="otoban_sol_1_2" pos="284.30" length="50.00" friendlyPos="1" period="300.00" file="e2_1.xml"/>
+    <laneAreaDetector id="e2_ana_3" lane="otoban_sag_2_0" pos="283.92" length="50.00" friendlyPos="1" period="300.00" file="e2_2.xml"/>
+    <laneAreaDetector id="e2_ana_4" lane="otoban_sag_2_1" pos="283.64" length="50.00" friendlyPos="1" period="300.00" file="e2_0.xml"/>
+    <laneAreaDetector id="e2_ana_5" lane="otoban_sag_2_2" pos="283.53" length="50.00" friendlyPos="1" period="300.00" file="e2_1.xml"/>
 </additional>

@@ -31,6 +31,7 @@ class StrategicAgent:
                - 'UNAUTHENTICATED_SPEED_CONTROL' -> 'ATTACK_SPEED_SPOOF'
                - 'LOGIN_PAGE_FOUND'              -> 'ATTACK_SQL'
                - 'UNAUTHENTICATED_VEHICLE_INJECTION' -> 'ATTACK_FAKE_VEHICLE'
+               - 'UNAUTHENTICATED_SENSOR_API'    -> 'ATTACK_SENSOR_SPOOF'
            - 'phase' == 'ANALYSIS' ise -> 'ANALYZE_WEB' SEÇ.
            - 'phase' == 'RECON'    ise -> 'SCAN_PORTS' SEÇ.
 

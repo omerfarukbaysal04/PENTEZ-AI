@@ -71,6 +71,11 @@ class ReconAgent:
                         vulns.append("UNAUTHENTICATED_SPEED_CONTROL")
                     if "UNAUTHENTICATED_VEHICLE_INJECTION" not in vulns:
                         vulns.append("UNAUTHENTICATED_VEHICLE_INJECTION")
+
+                    if "UNAUTHENTICATED_SENSOR_API" not in vulns:
+                        vulns.append("UNAUTHENTICATED_SENSOR_API")
+                        print("🚨 [RECON] KRİTİK: IoT Sensör API'sine (Kavşak Kontrolü) yetkisiz erişim tespit edildi!")
+                        
                     # if "MOVEMENT_HACK_VULN" not in vulns:
                     #     vulns.append("MOVEMENT_HACK_VULN")
                     blackboard.update_key("vulnerabilities", vulns)

@@ -288,6 +288,45 @@ def run_simulation():
                     except Exception as e:
                         print(f">>> [HATA] SPEED_SPOOF: {e}")
 
+                elif cmd == "ATTACK_SENSOR_SPOOF":
+                    print(f"!!! DEBUG: IoT SENSÖR ZEHİRLEME KOMUTU ALINDI !!!")
+                    try:
+                        tl_id = "center" 
+                        
+                        print(f">>> [SİBER SALDIRI] {tl_id} kavşağının IoT sensör API'sine sızıldı.")
+                        print(">>> [POISONING] Ana Yol (Dolu): %0 Yoğunluk raporlanıyor (False Negative).")
+                        print(">>> [POISONING] Yan Yol (Boş): %98 Yoğunluk, 120 Araç raporlanıyor (False Positive).")
+                        
+                        current_state = traci.trafficlight.getRedYellowGreenState(tl_id)
+                        length = len(current_state)
+                        
+                        # --- IŞIK KAYDIRMA OPERASYONU ---
+                        # Yeşilleri en başta denedik (Üst yola yandı)
+                        # Yeşilleri en sonda denedik (Sol yola yandı)
+                        # Şimdi yeşilleri araya sıkıştırıyoruz (Büyük ihtimalle Sağ yola denk gelecek)
+                        
+                        # Üst yolun 3 veya 4 bağlantısı olduğunu varsayıp onları 'r' yapıyoruz,
+                        # Sonraki 3 şeridi (sağ yolu) 'G' yapıyoruz,
+                        # Geri kalanını 'r' ile dolduruyoruz.
+                        
+                        # ŞU İKİSİNDEN BİRİ KESİN SAĞ YOLU AÇACAKTIR:
+                        
+                        # DENEME 1: Baştan 3 kırmızı atla, sonra 3 yeşil yak
+                        hacked_state = "rrrGGG" + ("r" * (length - 6))
+                        
+                        # (Eğer Deneme 1'de sağ yol tam açılmazsa, aşağıdaki Deneme 2'yi aktif et)
+                        # DENEME 2: Baştan 4 kırmızı atla, sonra 3 yeşil yak
+                        # hacked_state = "rrrrGGG" + ("r" * (length - 7))
+
+                        traci.trafficlight.setRedYellowGreenState(tl_id, hacked_state)
+                        traci.trafficlight.setPhaseDuration(tl_id, 99999)
+                        
+                        print(f">>> [TAMAMLANDI] Akıllı kavşak algoritması çöktü! Işıklar sahte sensör verisiyle donduruldu.")
+                        print(f">>> [ETKİ] Çapraz Yönlü Zehirleme başarıyla uygulandı. Ana arter felç oldu.")
+                        
+                    except Exception as e:
+                        print(f">>> [HATA] ATTACK_SENSOR_SPOOF: {e}")
+
                 elif cmd.startswith("SPEED:"):
                     try:
                         parts = cmd.split(":")

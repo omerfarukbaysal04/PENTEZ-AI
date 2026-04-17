@@ -46,6 +46,7 @@ SCENARIO_MAP = {
     "LOGIN_PAGE_FOUND":             ("ATTACK_SQL",          "SQL Injection (Web Panel)"),
     "WEBPANEL_LOCKDOWN":            ("ATTACK_WEBPANEL_LOCKDOWN", "Web Panel Lockdown (Araç Kilitleme)"),
     "UNAUTHENTICATED_VEHICLE_INJECTION": ("ATTACK_FAKE_VEHICLE", "Fake Vehicle (Sybil)"),
+    "UNAUTHENTICATED_SENSOR_API":   ("ATTACK_SENSOR_SPOOF", "IoT Sensör Zehirleme (False Positive/Negative)")
 }
 
 def ask_user_scenario(vulns):
@@ -176,7 +177,6 @@ def main():
                 recon.run(bb)
 
 
-
             elif decision['decision'] == "ANALYZE_WEB":
                 print(f"{Colors.GREEN}>>> WEB ANALİZ AJANI aktif...{Colors.ENDC}")
                 web_agent.run(bb)
@@ -192,6 +192,10 @@ def main():
 
             elif decision['decision'] == "ATTACK_SPEED_SPOOF":
                 print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (Speed Spoof — Hız Kontrol Ele Geçirme)...{Colors.ENDC}")
+                exploit_agent.run(bb)
+
+            elif decision['decision'] == "ATTACK_SENSOR_SPOOF":
+                print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (IoT Sensör Zehirleme - False Positive/Negative)...{Colors.ENDC}")
                 exploit_agent.run(bb)
 
             # elif decision['decision'] == "ATTACK_MOVEMENT_HACK":
