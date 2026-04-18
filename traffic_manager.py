@@ -406,6 +406,51 @@ def run_simulation():
                             
                     except Exception as e:
                         print(f">>> [HATA] ATTACK_IDS_SPOOF_STOP: {e}")
+                
+                elif cmd == "ATTACK_IDS_SPOOF_SPEED":
+                    print(f"!!! DEBUG: KAVŞAK SABOTAJI (AŞIRI HIZ) KOMUTU ALINDI !!!")
+                    try:
+                        print(f">>> [SİBER SALDIRI] IoT Sensör Ağlarına Hayalet Araç Verisi Basılıyor...")
+                        print(f">>> [POISONING] Tüm yönlerden yaklaşan araçların hızı sahte olarak '150 km/s' gösteriliyor.")
+                        
+                        tl_ids = traci.trafficlight.getIDList()
+                        if tl_ids:
+                            tl_id = tl_ids[0]
+
+                            current_state = traci.trafficlight.getRedYellowGreenState(tl_id)
+                            length = len(current_state)
+                            
+                            state_green = "G" * length  # Herkese aynı anda Yeşil
+                            state_red   = "r" * length  # Herkese aynı anda Kırmızı
+                            state_yellow = "y" * length # Herkese aynı anda Sarı
+
+                            phases = [
+                                traci.trafficlight.Phase(1.0, state_green),
+                                traci.trafficlight.Phase(1.0, state_red),
+                                traci.trafficlight.Phase(1.0, state_yellow)
+                            ]
+                            
+                            malicious_logic = traci.trafficlight.Logic("hacked_disco", 0, 0, phases=phases)
+                            
+                            traci.trafficlight.setProgramLogic(tl_id, malicious_logic)
+                            traci.trafficlight.setProgram(tl_id, "hacked_disco")
+                            
+                            print(f"🚥 [SİSTEM ALARMI] Sensörlerde anormal hız (150 km/s) tespit edildi!")
+                            print(f"🚥 [KAVŞAK ÇÖKTÜ] Orijinal algoritma silindi, 1 saniyelik kaotik döngü yüklendi.")
+                            
+                            try:
+                                tl_x, tl_y = traci.junction.getPosition(tl_id)
+                                traci.gui.setOffset("View #0", tl_x, tl_y)
+                                traci.gui.setZoom("View #0", 1200)
+                            except:
+                                pass
+                                
+                            print(f">>> [SONUÇ] Saldırı başarılı! Işıklar disko moduna girdi, trafik akışı yok edildi.")
+                        else:
+                            print(">>> [HATA] Sahnede müdahale edilecek trafik ışığı bulunamadı.")
+                            
+                    except Exception as e:
+                        print(f">>> [HATA] ATTACK_IDS_SPOOF_SPEED: {e}")
 
                 elif cmd.startswith("SPEED:"):
                     try:
