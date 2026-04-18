@@ -300,24 +300,30 @@ def run_simulation():
                         current_state = traci.trafficlight.getRedYellowGreenState(tl_id)
                         length = len(current_state)
                         
-                        # --- IŞIK KAYDIRMA OPERASYONU ---
-                        # Yeşilleri en başta denedik (Üst yola yandı)
-                        # Yeşilleri en sonda denedik (Sol yola yandı)
-                        # Şimdi yeşilleri araya sıkıştırıyoruz (Büyük ihtimalle Sağ yola denk gelecek)
-                        
-                        # Üst yolun 3 veya 4 bağlantısı olduğunu varsayıp onları 'r' yapıyoruz,
-                        # Sonraki 3 şeridi (sağ yolu) 'G' yapıyoruz,
-                        # Geri kalanını 'r' ile dolduruyoruz.
-                        
-                        # ŞU İKİSİNDEN BİRİ KESİN SAĞ YOLU AÇACAKTIR:
-                        
-                        # DENEME 1: Baştan 3 kırmızı atla, sonra 3 yeşil yak
-                        hacked_state = "rrrGGG" + ("r" * (length - 6))
-                        
-                        # (Eğer Deneme 1'de sağ yol tam açılmazsa, aşağıdaki Deneme 2'yi aktif et)
-                        # DENEME 2: Baştan 4 kırmızı atla, sonra 3 yeşil yak
-                        # hacked_state = "rrrrGGG" + ("r" * (length - 7))
+                        print(f"!!! DEBUG: Kavşak Işık Uzunluğu: {length} karakter !!!")
 
+                        # --- OTONOM KEŞİF VE MANİPÜLASYON ---
+                        # 1. Kavşağa bağlı tüm şeritlerin (linklerin) haritasını çekiyoruz
+                        links = traci.trafficlight.getControlledLinks(tl_id)
+                        
+                        # 2. Önce tüm ışıkları Kırmızı ('r') olarak ayarlıyoruz (Listeye çevirerek)
+                        hacked_state_list = ["r"] * length
+                        
+                        # 3. İndeksleri tarayıp hedef yolumuzu ("otoban_sag_2") buluyoruz
+                        for i in range(length):
+                            if links[i]: # Eğer bu indekste bir bağlantı varsa
+                                incoming_lane = links[i][0][0] # O ışığın kontrol ettiği gelen şerit
+                                
+                                # Eğer şerit adı bizim hedef (boş) yolumuzsa, ışığını Yeşil ('G') yap
+                                if incoming_lane.startswith("otoban_sag_2"):
+                                    hacked_state_list[i] = "G"
+                        
+                        # 4. Listeyi tekrar string'e çeviriyoruz (örn: "rrrrrGGGrrrr")
+                        hacked_state = "".join(hacked_state_list)
+                        
+                        print(f"!!! DEBUG: Otonom hedefleme başarılı. Yeni ışık fazı: {hacked_state}")
+
+                        # 5. Sahte ışık dizilimini kavşağa dayat ve süresiz dondur
                         traci.trafficlight.setRedYellowGreenState(tl_id, hacked_state)
                         traci.trafficlight.setPhaseDuration(tl_id, 99999)
                         
