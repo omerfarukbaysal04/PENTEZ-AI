@@ -111,7 +111,7 @@ def ask_user_scenario(vulns):
 def main():
     parser = argparse.ArgumentParser(description='PENTEZ-AI: Otonom Sızma Testi Aracı')
     parser.add_argument('-t', '--target', type=str, required=True, help='Hedef IP (Örn: localhost)')
-    parser.add_argument('-m', '--model',  type=str, default='llama3.1', help='LLM Modeli')
+    parser.add_argument('-m', '--model',  type=str, default='llama3.1:latest', help='LLM Modeli')
     parser.add_argument('--verbose', action='store_true', help='Detaylı çıktı')
     args = parser.parse_args()
 
