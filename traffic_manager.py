@@ -97,6 +97,46 @@ def start_socket_server():
             print(f"[HATA] Socket hatası: {e}")
             break
 
+def spawn_ambulance(victim_veh=None):
+    """Acil durum (IDS alarmı) anında haritaya bir ambulans ekler."""
+    ambulance_id = f"AMBULANCE_{int(time.time())}"
+    
+    try:
+        # 1. ROTA MANTIĞI: Ambulansı kurbanın rotasında doğur ki doğrudan kaza yerine gitsin!
+        if victim_veh:
+            target_route = traci.vehicle.getRouteID(victim_veh)
+        else:
+            target_route = traci.route.getIDList()[0] 
+        
+        # 2. Aracı simülasyona ekle
+        traci.vehicle.add(
+            vehID=ambulance_id,
+            routeID=target_route,
+            typeID="DEFAULT_VEHTYPE",
+            depart="now",
+            departSpeed="max"
+        )
+        
+        # 3. Ambulans Mutasyonu
+        traci.vehicle.setColor(ambulance_id, (255, 0, 0, 255))      # Kırmızı
+        traci.vehicle.setShapeClass(ambulance_id, "emergency")      
+        traci.vehicle.setVehicleClass(ambulance_id, "emergency")    
+        traci.vehicle.setMaxSpeed(ambulance_id, 40.0)               
+        traci.vehicle.setSpeedFactor(ambulance_id, 1.5)             
+        traci.vehicle.setSignals(ambulance_id, 1)    # Mavi çakarlar
+        traci.vehicle.setSpeedMode(ambulance_id, 0)  # Kuralları ez
+        
+        # --- YENİ: KAMERAYI AMBULANSA KİLİTLE ---
+        try:
+            traci.gui.trackVehicle("View #0", ambulance_id)
+            traci.gui.setZoom("View #0", 1500) # Aksiyonu yakından izle
+        except:
+            pass # GUI kapalıysa çökmesin
+            
+        print(f"🚑 [SİSTEM] {ambulance_id} kodlu Ambulans kaza rotasına sevk edildi!")
+        
+    except Exception as e:
+        print(f"❌ [IDS] Ambulans spawn hatası: {e}")
 
 def run_simulation():
     t = threading.Thread(target=start_socket_server)
@@ -332,6 +372,40 @@ def run_simulation():
                         
                     except Exception as e:
                         print(f">>> [HATA] ATTACK_SENSOR_SPOOF: {e}")
+                
+                elif cmd == "ATTACK_IDS_SPOOF_STOP":
+                    print(f"!!! DEBUG: IDS SAHTE ALARM (KAZA) KOMUTU ALINDI !!!")
+                    try:
+                        vehicles = traci.vehicle.getIDList()
+                        if vehicles:
+                            victim_veh = vehicles[0]
+                            
+                            print(f">>> [SİBER SALDIRI] IoT Hız Sensörü Manipüle Ediliyor...")
+                            print(f">>> [POISONING] Sensöre {victim_veh} aracı için 'Hız = 0 km/s' verisi gönderiliyor.")
+                            
+                            # 1. SUMO'nun çarpışma önleme sistemini kapat! (Anında durması için)
+                            traci.vehicle.setSpeedMode(victim_veh, 0)
+                            
+                            # 2. Kurban aracı anında durdur ve SİMSİYAH yap
+                            traci.vehicle.setSpeed(victim_veh, 0.0)
+                            traci.vehicle.setColor(victim_veh, (0, 0, 0, 255))
+                            
+                            # --- MAVİ TAKIM (IDS) KONTROLÜ ---
+                            # Saldırgan API'ye 0 değerini bastığı için IDS bu sahte veriyi okur
+                            spoofed_speed = 0.0 
+                            
+                            if spoofed_speed <= 0.1:
+                                print(f"🚨 [IDS ALARM] KRİTİK KAZA TESPİT EDİLDİ! {victim_veh} konumunda ani duruş.")
+                                
+                                # Ambulansı kurbanın bilgisiyle çağır ve kamerayı kilitle!
+                                spawn_ambulance(victim_veh)
+                                
+                                print(f">>> [SONUÇ] Saldırı başarılı! IDS sistemi sahte veriyle kandırıldı.")
+                        else:
+                            print(">>> [HATA] Sahnede kurban edilecek araç bulunamadı.")
+                            
+                    except Exception as e:
+                        print(f">>> [HATA] ATTACK_IDS_SPOOF_STOP: {e}")
 
                 elif cmd.startswith("SPEED:"):
                     try:

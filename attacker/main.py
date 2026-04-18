@@ -46,7 +46,7 @@ SCENARIO_MAP = {
     "LOGIN_PAGE_FOUND":             ("ATTACK_SQL",          "SQL Injection (Web Panel)"),
     "WEBPANEL_LOCKDOWN":            ("ATTACK_WEBPANEL_LOCKDOWN", "Web Panel Lockdown (Araç Kilitleme)"),
     "UNAUTHENTICATED_VEHICLE_INJECTION": ("ATTACK_FAKE_VEHICLE", "Fake Vehicle (Sybil)"),
-    "UNAUTHENTICATED_SENSOR_API":   ("ATTACK_SENSOR_SPOOF", "IoT Sensör Zehirleme (False Positive/Negative)")
+    "UNAUTHENTICATED_SENSOR_API":   ("CATEGORY_IOT_ATTACKS", "IoT Sensör Zafiyetleri (Alt Menü)")
 }
 
 def ask_user_scenario(vulns):
@@ -76,6 +76,30 @@ def ask_user_scenario(vulns):
             idx = int(choice) - 1
             if 0 <= idx < len(available):
                 vuln, action, label = available[idx]
+                
+                if action == "CATEGORY_IOT_ATTACKS":
+                    print(f"\n{Colors.WARNING}>>> IoT SENSÖR SALDIRI VEKTÖRLERİ:{Colors.ENDC}")
+                    print("  [A] Çapraz Yönlü Zehirleme (Kavşak Kilitleme)")
+                    print("  [B] IDS Yanlış Alarm Üretimi (Hız = 0 km/s)")
+                    print("  [C] Işık Zamanlama Sabotajı (Hız = 150 km/s)")
+                    
+                    alt_secim = input(f"{Colors.CYAN}>>> Seçiminiz (A/B/C): {Colors.ENDC}").strip().upper()
+                    
+                    if alt_secim == 'A':
+                        action = "ATTACK_SENSOR_SPOOF"
+                        label = "Çapraz Yönlü Zehirleme (Kavşak Kilitleme)"
+                    elif alt_secim == 'B':
+                        action = "ATTACK_IDS_SPOOF_STOP"
+                        label = "IDS Yanlış Alarm Üretimi (Hız = 0 km/s)"
+                    elif alt_secim == 'C':
+                        action = "ATTACK_IDS_SPOOF_SPEED"
+                        label = "Işık Zamanlama Sabotajı (Hız = 150 km/s)"
+                    else:
+                        print(f"{Colors.FAIL}❌ Geçersiz seçim, A senaryosu varsayılan olarak seçildi.{Colors.ENDC}")
+                        action = "ATTACK_SENSOR_SPOOF"
+                        label = "Çapraz Yönlü Zehirleme (Kavşak Kilitleme)"
+                # --------------------------------------
+
                 print(f"\n{Colors.GREEN}  ✅ Seçilen senaryo: {label}{Colors.ENDC}\n")
                 return action
             else:
@@ -121,6 +145,7 @@ def main():
     print(f"\n{Colors.BLUE}[INFO] Otonom döngü başlatıldı. Çıkmak için CTRL+C.{Colors.ENDC}\n")
 
     step_count = 0
+
     try:
         while True:
             step_count += 1
@@ -155,6 +180,7 @@ def main():
             # Kullanıcı seçimi LLM kararını override eder
             current_phase = bb.read_state().get("current_phase", "RECON")
             selected      = bb.read_state().get("selected_scenario")
+
             if current_phase == "EXPLOIT" and not selected:
                 # Port 5000 açıksa ve WEB analizi henüz yapılmadıysa otomatik yap
                 urls = bb.read_state().get("target_urls", [])
@@ -195,7 +221,15 @@ def main():
                 exploit_agent.run(bb)
 
             elif decision['decision'] == "ATTACK_SENSOR_SPOOF":
-                print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (IoT Sensör Zehirleme - False Positive/Negative)...{Colors.ENDC}")
+                print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (IoT Sensör Zehirleme - Çapraz Yönlü)...{Colors.ENDC}")
+                exploit_agent.run(bb)
+
+            elif decision['decision'] == "ATTACK_IDS_SPOOF_STOP":
+                print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (IDS Yanlış Alarm - Sahte Kaza Üretimi)...{Colors.ENDC}")
+                exploit_agent.run(bb)
+
+            elif decision['decision'] == "ATTACK_IDS_SPOOF_SPEED":
+                print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (Işık Zamanlama Sabotajı - Aşırı Hız)...{Colors.ENDC}")
                 exploit_agent.run(bb)
 
             # elif decision['decision'] == "ATTACK_MOVEMENT_HACK":
