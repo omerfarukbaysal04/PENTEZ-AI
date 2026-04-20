@@ -97,46 +97,68 @@ def start_socket_server():
             print(f"[HATA] Socket hatası: {e}")
             break
 
-def spawn_ambulance(victim_veh=None):
-    """Acil durum (IDS alarmı) anında haritaya bir ambulans ekler."""
-    ambulance_id = f"AMBULANCE_{int(time.time())}"
-    
+def spawn_emergency_fleet(victim_veh=None):
+    """Acil durum anında olay yerine Polis, İtfaiye ve Ambulansın TÜMÜNÜ sevk eder."""
+    import time
+    import traci
+
     try:
-        # 1. ROTA MANTIĞI: Ambulansı kurbanın rotasında doğur ki doğrudan kaza yerine gitsin!
+        # 1. Rotayı Belirle (Kurbanın rotası)
         if victim_veh:
             target_route = traci.vehicle.getRouteID(victim_veh)
         else:
             target_route = traci.route.getIDList()[0] 
-        
-        # 2. Aracı simülasyona ekle
-        traci.vehicle.add(
-            vehID=ambulance_id,
-            routeID=target_route,
-            typeID="DEFAULT_VEHTYPE",
-            depart="now",
-            departSpeed="max"
-        )
-        
-        # 3. Ambulans Mutasyonu
-        traci.vehicle.setColor(ambulance_id, (255, 0, 0, 255))      # Kırmızı
-        traci.vehicle.setShapeClass(ambulance_id, "emergency")      
-        traci.vehicle.setVehicleClass(ambulance_id, "emergency")    
-        traci.vehicle.setMaxSpeed(ambulance_id, 40.0)               
-        traci.vehicle.setSpeedFactor(ambulance_id, 1.5)             
-        traci.vehicle.setSignals(ambulance_id, 1)    # Mavi çakarlar
-        traci.vehicle.setSpeedMode(ambulance_id, 0)  # Kuralları ez
-        
-        # --- YENİ: KAMERAYI AMBULANSA KİLİTLE ---
-        try:
-            traci.gui.trackVehicle("View #0", ambulance_id)
-            traci.gui.setZoom("View #0", 1500) # Aksiyonu yakından izle
-        except:
-            pass # GUI kapalıysa çökmesin
             
-        print(f"🚑 [SİSTEM] {ambulance_id} kodlu Ambulans kaza rotasına sevk edildi!")
+        # 2. SUMO'nun Desteklediği Acil Durum Araçları Kataloğu
+        emergency_types = [
+            {"type": "POLICE", "shape": "police", "color": (0, 0, 255, 255)},       # Mavi Polis
+            {"type": "AMBULANCE", "shape": "emergency", "color": (255, 0, 0, 255)}, # Kırmızı Ambulans
+            {"type": "FIRETRUCK", "shape": "firebrigade", "color": (200, 50, 50, 255)} # Koyu Kırmızı İtfaiye
+        ]
         
+        # 3. RASTGELELİĞİ KALDIRDIK: 3 aracı da aynı anda sevk et!
+        selected_fleet = emergency_types
+        
+        timestamp = int(time.time())
+        first_veh_id = None
+        
+        for i, veh_data in enumerate(selected_fleet):
+            veh_id = f"{veh_data['type']}_{timestamp}_{i}"
+            if i == 0:
+                first_veh_id = veh_id # Kamerayı ilk fırlayan araca (Polise) kilitle
+                
+            # Aracı haritaya ekle
+            traci.vehicle.add(
+                vehID=veh_id,
+                routeID=target_route,
+                typeID="DEFAULT_VEHTYPE",
+                depart="now",
+                departSpeed="max"
+            )
+            
+            # MUTASYON: Aracı acil durum tipine dönüştür
+            traci.vehicle.setColor(veh_id, veh_data['color'])
+            traci.vehicle.setShapeClass(veh_id, veh_data['shape'])
+            traci.vehicle.setVehicleClass(veh_id, "emergency") 
+            traci.vehicle.setMaxSpeed(veh_id, 45.0)            
+            traci.vehicle.setSpeedFactor(veh_id, 1.5)
+            
+            # Çakarları aç ve kuralları ez
+            traci.vehicle.setSignals(veh_id, 1)    
+            traci.vehicle.setSpeedMode(veh_id, 0)  
+            
+            print(f"🚨 [SİSTEM] {veh_id} olay yerine sevk edildi!")
+
+        # --- KAMERAYI LİDER ARACA KİLİTLE ---
+        try:
+            if first_veh_id:
+                traci.gui.trackVehicle("View #0", first_veh_id)
+                traci.gui.setZoom("View #0", 1500)
+        except:
+            pass
+            
     except Exception as e:
-        print(f"❌ [IDS] Ambulans spawn hatası: {e}")
+        print(f"❌ [IDS] Acil Durum Filosu spawn hatası: {e}")
 
 def run_simulation():
     t = threading.Thread(target=start_socket_server)
@@ -386,9 +408,8 @@ def run_simulation():
                             # 1. SUMO'nun çarpışma önleme sistemini kapat! (Anında durması için)
                             traci.vehicle.setSpeedMode(victim_veh, 0)
                             
-                            # 2. Kurban aracı anında durdur ve SİMSİYAH yap
                             traci.vehicle.setSpeed(victim_veh, 0.0)
-                            traci.vehicle.setColor(victim_veh, (0, 0, 0, 255))
+                            traci.vehicle.setColor(victim_veh, (255, 128, 0, 255))
                             
                             # --- MAVİ TAKIM (IDS) KONTROLÜ ---
                             # Saldırgan API'ye 0 değerini bastığı için IDS bu sahte veriyi okur
@@ -398,7 +419,7 @@ def run_simulation():
                                 print(f"🚨 [IDS ALARM] KRİTİK KAZA TESPİT EDİLDİ! {victim_veh} konumunda ani duruş.")
                                 
                                 # Ambulansı kurbanın bilgisiyle çağır ve kamerayı kilitle!
-                                spawn_ambulance(victim_veh)
+                                spawn_emergency_fleet(victim_veh)
                                 
                                 print(f">>> [SONUÇ] Saldırı başarılı! IDS sistemi sahte veriyle kandırıldı.")
                         else:

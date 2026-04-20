@@ -2,24 +2,11 @@ import requests
 import json
 from datetime import datetime
 import os
-import os
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# ROOT_DIR = os.path.dirname(BASE_DIR)
-
-# font_path = os.path.join(ROOT_DIR, "assets", "fonts", "DejaVuSans.ttf")
-# font_bold_path = os.path.join(ROOT_DIR, "assets", "fonts", "DejaVuSans-Bold.ttf")
-
-# pdfmetrics.registerFont(TTFont("DejaVuSans", font_path))
-# pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", font_bold_path))
-
-# pdfmetrics.registerFontFamily(
-#     "DejaVuSans",
-#     normal="DejaVuSans",
-#     bold="DejaVuSans-Bold",
-# )
+import platform
+if platform.system() == "Windows":
+    FONT_DIR = "C:/Windows/Fonts"
+    # DejaVu yoksa Arial kullan
 
 # ─── SENARYO VERİ TABANI ────────────────────────────────────────────────────
 # Her saldırı senaryosu için CVSS, MITRE, PoC gibi veriler hardcode
@@ -350,7 +337,7 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
         return True
 
     def _md_to_pdf(self, md_content, ts_file):
-        """Markdown'ı PDF'e çevir — reportlab kullan"""
+        """Markdown'i PDF'e cevir — reportlab + DejaVu (Turkce karakter destegi)"""
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.units import cm
@@ -360,6 +347,61 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
             HRFlowable, Preformatted
         )
         from reportlab.lib.enums import TA_LEFT, TA_CENTER
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+
+        # DejaVu fontlarini kaydet — Turkce karakter destegi
+        # Platform'a gore font dizini otomatik tespit edilir
+        import platform, os
+        _system = platform.system()
+        if _system == "Windows":
+            # Windows: DejaVu yoksa Arial kullan (Windows varsayilan Unicode font)
+            _win_fonts = os.path.join(os.environ.get("WINDIR", "C:/Windows"), "Fonts")
+            _candidates = [
+                # DejaVu (elle kurulduysa)
+                (f"{_win_fonts}/DejaVuSans.ttf",      f"{_win_fonts}/DejaVuSans-Bold.ttf",
+                 f"{_win_fonts}/DejaVuSans-Oblique.ttf", f"{_win_fonts}/DejaVuSansMono.ttf"),
+                # Arial (Windows varsayilan, Turkce destekler)
+                (f"{_win_fonts}/arial.ttf",  f"{_win_fonts}/arialbd.ttf",
+                 f"{_win_fonts}/ariali.ttf", f"{_win_fonts}/cour.ttf"),
+            ]
+            _font_files = None
+            for candidate in _candidates:
+                if all(os.path.exists(f) for f in candidate):
+                    _font_files = candidate
+                    break
+        else:
+            _linux_dir = "/usr/share/fonts/truetype/dejavu"
+            if os.path.exists(f"{_linux_dir}/DejaVuSans.ttf"):
+                _font_files = (
+                    f"{_linux_dir}/DejaVuSans.ttf",
+                    f"{_linux_dir}/DejaVuSans-Bold.ttf",
+                    f"{_linux_dir}/DejaVuSans-Oblique.ttf",
+                    f"{_linux_dir}/DejaVuSansMono.ttf",
+                )
+            else:
+                _font_files = None
+
+        try:
+            if _font_files is None:
+                raise FileNotFoundError("Uygun font bulunamadi")
+            _fn, _fb, _fi, _fm = _font_files
+            pdfmetrics.registerFont(TTFont("TR-Normal", _fn))
+            pdfmetrics.registerFont(TTFont("TR-Bold",   _fb))
+            pdfmetrics.registerFont(TTFont("TR-Italic", _fi))
+            pdfmetrics.registerFont(TTFont("TR-Mono",   _fm))
+            from reportlab.pdfbase.pdfmetrics import registerFontFamily
+            registerFontFamily("TR-Normal", normal="TR-Normal", bold="TR-Bold",
+                               italic="TR-Italic", boldItalic="TR-Bold")
+            FONT_NORMAL = "TR-Normal"
+            FONT_BOLD   = "TR-Bold"
+            FONT_MONO   = "TR-Mono"
+            print(f"[RAPORLAMA] Font yuklendi: {os.path.basename(_fn)}")
+        except Exception as e:
+            print(f"[UYARI] Turkce font yuklenemedi: {e}")
+            FONT_NORMAL = "Helvetica"
+            FONT_BOLD   = "Helvetica-Bold"
+            FONT_MONO   = "Courier"
 
         pdf_path = f"PENTEZ_REPORT_{ts_file}.pdf"
         doc = SimpleDocTemplate(
@@ -370,26 +412,25 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
 
         styles = getSampleStyleSheet()
 
-        # Özel stiller
-        s_title   = ParagraphStyle("title",   parent=styles["Title"],
+        # Ozel stiller — DejaVu font ile
+        s_title   = ParagraphStyle("title_dj",  fontName=FONT_BOLD,
                                    fontSize=20, textColor=colors.HexColor("#1a1a2e"),
                                    spaceAfter=6)
-        s_h1      = ParagraphStyle("h1",      parent=styles["Heading1"], fontName="DejaVuSans-Bold",
+        s_h1      = ParagraphStyle("h1_dj",     fontName=FONT_BOLD,
                                    fontSize=14, textColor=colors.HexColor("#e94560"),
-                                   spaceBefore=14, spaceAfter=4,
-                                   borderPad=4)
-        s_h2      = ParagraphStyle("h2",      parent=styles["Heading2"], fontName="DejaVuSans-Bold",
+                                   spaceBefore=14, spaceAfter=4)
+        s_h2      = ParagraphStyle("h2_dj",     fontName=FONT_BOLD,
                                    fontSize=12, textColor=colors.HexColor("#0f3460"),
                                    spaceBefore=10, spaceAfter=3)
-        s_body    = ParagraphStyle("body",    parent=styles["Normal"],fontName="DejaVuSans",
+        s_body    = ParagraphStyle("body_dj",   fontName=FONT_NORMAL,
                                    fontSize=10, leading=14, spaceAfter=6)
-        s_meta    = ParagraphStyle("meta",    parent=styles["Normal"],
+        s_meta    = ParagraphStyle("meta_dj",   fontName=FONT_NORMAL,
                                    fontSize=9,  textColor=colors.grey, spaceAfter=10)
-        s_code    = ParagraphStyle("code",    parent=styles["Code"],
+        s_code    = ParagraphStyle("code_dj",   fontName=FONT_MONO,
                                    fontSize=8,  backColor=colors.HexColor("#f5f5f5"),
                                    borderColor=colors.HexColor("#cccccc"),
                                    borderWidth=1, borderPad=6, spaceAfter=8)
-        s_footer  = ParagraphStyle("footer",  parent=styles["Normal"],
+        s_footer  = ParagraphStyle("footer_dj", fontName=FONT_NORMAL,
                                    fontSize=8,  textColor=colors.grey, alignment=TA_CENTER)
 
         RED   = colors.HexColor("#e94560")
@@ -406,7 +447,7 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
             style = [
                 ("BACKGROUND", (0,0), (-1,0), DARK if header else LIGHT),
                 ("TEXTCOLOR",  (0,0), (-1,0), colors.white if header else colors.black),
-                ("FONTNAME",   (0,0), (-1,0), "Helvetica-Bold"),
+                ("FONTNAME",   (0,0), (-1,0), FONT_BOLD),
                 ("FONTSIZE",   (0,0), (-1,-1), 9),
                 ("ALIGN",      (0,0), (-1,-1), "LEFT"),
                 ("VALIGN",     (0,0), (-1,-1), "MIDDLE"),
@@ -421,9 +462,9 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
 
         # Kapak başlık
         story.append(Spacer(1, 1*cm))
-        story.append(Paragraph("PENTEZ-AI", ParagraphStyle("cover", parent=styles["Title"],
+        story.append(Paragraph("PENTEZ-AI", ParagraphStyle("cover_dj", fontName=FONT_BOLD,
                                 fontSize=28, textColor=RED, alignment=TA_CENTER)))
-        story.append(Paragraph("Sızma Testi Raporu", ParagraphStyle("cover2", parent=styles["Title"],
+        story.append(Paragraph("Sizmaaa Testi Raporu", ParagraphStyle("cover2_dj", fontName=FONT_NORMAL,
                                 fontSize=18, textColor=DARK, alignment=TA_CENTER)))
         story.append(HRFlowable(width="100%", thickness=2, color=RED, spaceAfter=10))
         story.append(Spacer(1, 0.5*cm))

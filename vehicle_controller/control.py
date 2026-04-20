@@ -72,6 +72,18 @@ def start_speed_control_server():
                     client.send(b"OK: Rota degistirme komutu uygulaniyor")
                 else:
                     client.send(b"ERR: Format hatasi. Beklenen: ROUTE:veh_id:route_id")
+            
+            elif data == "ATTACK_V2X_V2V":
+                # Kurban araç (Zombi), etrafındaki diğer araçlara sahte "KAZA VAR, DURUN!" yayını yapar
+                print("[VEHICLE_CONTROLLER] 🚨 ZOMBİ AKTİF: V2V Sybil (Yanlış Bilgi Yayılımı) saldırısı başlatıldı!")
+                forward_to_traffic_manager("V2X_SYBIL_V2V")
+                client.send(b"OK: V2V sahte acil durum yayini basladi")
+
+            elif data == "ATTACK_V2X_V2I":
+                # Kurban araç, altyapıya (kavşağa) içeriden sahte ve aşırı yüksek hız verisi basar
+                print("[VEHICLE_CONTROLLER] 🚨 ZOMBİ AKTİF: V2I Altyapı Zehirlenmesi saldırısı başlatıldı!")
+                forward_to_traffic_manager("V2X_SPOOF_V2I")
+                client.send(b"OK: V2I sahte telemetri verisi basladi")
 
             else:
                 client.send(b"ERR: Bilinmeyen komut")
