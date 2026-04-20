@@ -473,6 +473,91 @@ def run_simulation():
                     except Exception as e:
                         print(f">>> [HATA] ATTACK_IDS_SPOOF_SPEED: {e}")
 
+                elif cmd == "ATTACK_V2X_V2V":
+                    print(f"!!! DEBUG: V2V SİNYAL ENJEKSİYONU (SYBIL) KOMUTU İŞLENİYOR !!!")
+                    try:
+                        import math # Mesafe hesabı için
+                        
+                        active_vehs = traci.vehicle.getIDList()
+                        # Zombi aracımız hedef_arac olsun, yoksa sahadaki ilk aracı seç
+                        zombie_veh = "hedef_arac" if "hedef_arac" in active_vehs else (active_vehs[0] if active_vehs else None)
+                        
+                        if zombie_veh:
+                            # 1. Zombi aracı ZEHİR YEŞİLİ yap
+                            traci.vehicle.setColor(zombie_veh, (0, 255, 0, 255))
+                            
+                            # 2. Zombinin anlık X, Y koordinatlarını al
+                            zx, zy = traci.vehicle.getPosition(zombie_veh)
+                            
+                            # 3. KAMERA DÜZELTMESİ: Tam o X,Y noktasına odaklan, zoom'u genişlet ve takibe al!
+                            try:
+                                traci.gui.setOffset("View #0", zx, zy)  # Kamerayı tam aracın üstüne oturt
+                                traci.gui.setZoom("View #0", 750)       # 50m yarıçapı görmek için daha geniş açı (1500'den 750'ye düştü)
+                                traci.gui.trackVehicle("View #0", zombie_veh) # Şimdi takibe başla
+                            except Exception as cam_err:
+                                print(f"Kamera hizalama hatası: {cam_err}")
+
+                            print(f">>> [ZOMBİ AKTİF] {zombie_veh} aracı etrafına sahte V2V kaza sinyali yayıyor!")
+                            
+                            affected_count = 0
+                            
+                            # 4. ŞOK DALGASI: 50 metre yarıçapındaki tüm araçları bul
+                            for v in active_vehs:
+                                if v == zombie_veh:
+                                    continue # Zombi kendi yalanına kanmaz, yola devam eder!
+                                
+                                vx, vy = traci.vehicle.getPosition(v)
+                                dist = math.hypot(zx - vx, zy - vy) 
+                                
+                                if dist <= 50.0:
+                                    # Kurbanlar V2V mesajını "gerçek" sanıp kazık fren yapar
+                                    traci.vehicle.setSpeedMode(v, 0) 
+                                    traci.vehicle.setSpeed(v, 0.0)
+                                    traci.vehicle.setColor(v, (255, 0, 0, 255)) # Kaza yapanları KIRMIZI yap
+                                    affected_count += 1
+                                    
+                            print(f">>> [SONUÇ] Şok Dalgası: {affected_count} masum araç sahte sinyale kanıp kaza yaptı!")
+                            
+                        else:
+                            print(">>> [HATA] Sahnede zombi yapılacak araç bulunamadı.")
+                            
+                    except Exception as e:
+                        print(f">>> [HATA] ATTACK_V2X_V2V: {e}")
+
+                elif cmd == "ATTACK_V2X_V2I":
+                    print(f"!!! DEBUG: V2I ALTYAPI ZEHİRLEMESİ KOMUTU ALINDI !!!")
+                    try:
+                        active_vehs = traci.vehicle.getIDList()
+                        zombie_veh = "hedef_arac" if "hedef_arac" in active_vehs else (active_vehs[0] if active_vehs else None)
+                        
+                        if zombie_veh:
+                            # Zombi aracı yeşile boya
+                            traci.vehicle.setColor(zombie_veh, (0, 255, 0, 255))
+                            print(f">>> [ZOMBİ AKTİF] {zombie_veh} aracı içeriden kavşağa sahte telemetri (V2I) basıyor!")
+                            
+                            # Kavşağı bul ve V2I verisine güvenerek kilitle!
+                            tl_ids = traci.trafficlight.getIDList()
+                            if tl_ids:
+                                tl_id = tl_ids[0]
+                                # Güvenilir araçtan (OBU) geldiği için sistem sorgulamadan ışıkları dondurur
+                                traci.trafficlight.setPhaseDuration(tl_id, 9999)
+                                
+                                print(f"🚥 [KAVŞAK ÇÖKTÜ] Kendi aracından gelen sahte veriye güvenen sistem kilitlendi!")
+                                
+                                # Kamerayı zombiye kilitle
+                                try:
+                                    traci.gui.trackVehicle("View #0", zombie_veh)
+                                    traci.gui.setZoom("View #0", 1200)
+                                except:
+                                    pass
+                            else:
+                                print(">>> [HATA] Haritada trafik ışığı bulunamadı.")
+                        else:
+                            print(">>> [HATA] Sahnede zombi yapılacak araç bulunamadı.")
+                            
+                    except Exception as e:
+                        print(f">>> [HATA] V2X_SPOOF_V2I: {e}")
+
                 elif cmd.startswith("SPEED:"):
                     try:
                         parts = cmd.split(":")

@@ -46,7 +46,8 @@ SCENARIO_MAP = {
     "LOGIN_PAGE_FOUND":             ("ATTACK_SQL",          "SQL Injection (Web Panel)"),
     "WEBPANEL_LOCKDOWN":            ("ATTACK_WEBPANEL_LOCKDOWN", "Web Panel Lockdown (Araç Kilitleme)"),
     "UNAUTHENTICATED_VEHICLE_INJECTION": ("ATTACK_FAKE_VEHICLE", "Fake Vehicle (Sybil)"),
-    "UNAUTHENTICATED_SENSOR_API":   ("CATEGORY_IOT_ATTACKS", "IoT Sensör Zafiyetleri (Alt Menü)")
+    "UNAUTHENTICATED_SENSOR_API":   ("CATEGORY_IOT_ATTACKS", "IoT Sensör Zafiyetleri (Alt Menü)"),
+    "UNAUTHENTICATED_V2X_API":      ("CATEGORY_V2X_ATTACKS", "V2X Haberleşme Ağ Saldırıları (Alt Menü)"),
 }
 
 def ask_user_scenario(vulns):
@@ -99,6 +100,24 @@ def ask_user_scenario(vulns):
                         action = "ATTACK_SENSOR_SPOOF"
                         label = "Çapraz Yönlü Zehirleme (Kavşak Kilitleme)"
                 # --------------------------------------
+
+                elif action == "CATEGORY_V2X_ATTACKS":
+                    print(f"\n{Colors.WARNING}>>> V2X HABERLEŞME AĞI SALDIRILARI:{Colors.ENDC}")
+                    print("  [A] V2V Yanlış Bilgi Yayılımı (Araçtan Araca Şok Dalgası)")
+                    print("  [B] V2I Altyapı Zehirlenmesi (OBU Üzerinden Kavşak Manipülasyonu)")
+                    
+                    alt_secim = input(f"{Colors.CYAN}>>> Seçiminiz (A/B): {Colors.ENDC}").strip().upper()
+                    
+                    if alt_secim == 'A':
+                        action = "ATTACK_V2X_V2V"
+                        label = "V2V Yanlış Bilgi Yayılımı (Zombi Araç ile Kaza)"
+                    elif alt_secim == 'B':
+                        action = "ATTACK_V2X_V2I"
+                        label = "V2I Altyapı Zehirlenmesi (Kavşak Kilitleme)"
+                    else:
+                        print(f"{Colors.FAIL}❌ Geçersiz seçim, A senaryosu varsayılan olarak seçildi.{Colors.ENDC}")
+                        action = "ATTACK_V2X_V2V"
+                        label = "V2V Yanlış Bilgi Yayılımı (Zombi Araç ile Kaza)"
 
                 print(f"\n{Colors.GREEN}  ✅ Seçilen senaryo: {label}{Colors.ENDC}\n")
                 return action
@@ -230,6 +249,14 @@ def main():
 
             elif decision['decision'] == "ATTACK_IDS_SPOOF_SPEED":
                 print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (Işık Zamanlama Sabotajı - Aşırı Hız)...{Colors.ENDC}")
+                exploit_agent.run(bb)
+
+            elif decision['decision'] == "ATTACK_V2X_V2V":
+                print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (V2X: V2V Yanlış Bilgi Yayılımı)...{Colors.ENDC}")
+                exploit_agent.run(bb)
+
+            elif decision['decision'] == "ATTACK_V2X_V2I":
+                print(f"{Colors.WARNING}>>> EXPLOIT AJANI aktif (V2X: V2I Altyapı Zehirlenmesi)...{Colors.ENDC}")
                 exploit_agent.run(bb)
 
             # elif decision['decision'] == "ATTACK_MOVEMENT_HACK":

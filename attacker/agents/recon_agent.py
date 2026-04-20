@@ -69,15 +69,21 @@ class ReconAgent:
                     vulns = blackboard.read_state().get("vulnerabilities", [])
                     if "UNAUTHENTICATED_SPEED_CONTROL" not in vulns:
                         vulns.append("UNAUTHENTICATED_SPEED_CONTROL")
+
                     if "UNAUTHENTICATED_VEHICLE_INJECTION" not in vulns:
                         vulns.append("UNAUTHENTICATED_VEHICLE_INJECTION")
 
                     if "UNAUTHENTICATED_SENSOR_API" not in vulns:
                         vulns.append("UNAUTHENTICATED_SENSOR_API")
                         print("🚨 [RECON] KRİTİK: IoT Sensör API'sine (Kavşak Kontrolü) yetkisiz erişim tespit edildi!")
+                    
+                    if "UNAUTHENTICATED_V2X_API" not in vulns:
+                        vulns.append("UNAUTHENTICATED_V2X_API")
+                        print("🚨 [RECON] KRİTİK: Araç İçi Ünite (OBU) V2X anteninde yetkilendirme zafiyeti tespit edildi!")
                         
                     # if "MOVEMENT_HACK_VULN" not in vulns:
                     #     vulns.append("MOVEMENT_HACK_VULN")
+                    
                     blackboard.update_key("vulnerabilities", vulns)
                     blackboard.update_key("current_phase", "EXPLOIT")
                     print(f"📋 [RECON] Faz → EXPLOIT (hız kontrol zafiyeti tespit edildi)")

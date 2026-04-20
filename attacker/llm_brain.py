@@ -32,6 +32,7 @@ class StrategicAgent:
                - 'LOGIN_PAGE_FOUND'              -> 'ATTACK_SQL'
                - 'UNAUTHENTICATED_VEHICLE_INJECTION' -> 'ATTACK_FAKE_VEHICLE'
                - 'UNAUTHENTICATED_SENSOR_API'    -> 'ATTACK_SENSOR_SPOOF' (veya Blackboard'dan gelen alt senaryolar: 'ATTACK_IDS_SPOOF_STOP', 'ATTACK_IDS_SPOOF_SPEED')
+               - 'UNAUTHENTICATED_V2X_API'       -> 'ATTACK_V2X_V2V' (veya Blackboard'dan gelen alt senaryo: 'ATTACK_V2X_V2I')
            - 'phase' == 'ANALYSIS' ise -> 'ANALYZE_WEB' SEÇ.
            - 'phase' == 'RECON'    ise -> 'SCAN_PORTS' SEÇ.
 
