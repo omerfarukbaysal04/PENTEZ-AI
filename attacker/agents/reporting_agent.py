@@ -13,82 +13,154 @@ if platform.system() == "Windows":
 # LLM bu verileri uydurmaz — sadece analiz metnini yazar
 SCENARIO_DB = {
     "ATTACK_SQL": {
-        "baslik": "SQL Enjeksiyonu ile Trafik Kontrol Paneline Yetkisiz Erişim",
+        "baslik": "SQL Enjeksiyonu ile Trafik Kontrol Paneline Yetkisiz Erisim",
         "zafiyet_adi": "SQL Injection (CWE-89)",
         "cvss_skor": "9.8",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-        "risk_seviyesi": "KRİTİK",
+        "risk_seviyesi": "KRITIK",
         "mitre": [
             {"id": "T1190", "taktor": "Initial Access", "teknik": "Exploit Public-Facing Application"},
-            {"id": "T1059", "taktor": "Execution", "teknik": "Command and Scripting Interpreter"},
-            {"id": "T1565", "taktor": "Impact", "teknik": "Data Manipulation"},
+            {"id": "T1059", "taktor": "Execution",       "teknik": "Command and Scripting Interpreter"},
+            {"id": "T1565", "taktor": "Impact",          "teknik": "Data Manipulation"},
         ],
-        "poc": "POST /login HTTP/1.1\nHost: localhost:5000\nContent-Type: application/x-www-form-urlencoded\n\nusername=' OR '1'='1&password=' OR '1'='1",
-        "etki": "Trafik kontrol sistemine tam yetkiyle erişim, tüm kavşak ışıklarının manipülasyonu",
-        "oneri": "Parametreli sorgular (prepared statements) kullanılmalı, kullanıcı girdileri whitelist ile doğrulanmalıdır.",
+        "poc": "POST /login HTTP/1.1\nHost: localhost:5000\n\nusername=\' OR \'1\'=\'1&password=\' OR \'1\'=\'1",
+        "etki": "Trafik kontrol sistemine tam yetkiyle erisim, tum kavsak isiklainin manipulasyonu",
+        "oneri": "Parametreli sorgular (prepared statements) kullanilmali, kullanici girdileri whitelist ile dogrulanmalidir.",
     },
     "ATTACK_RANSOMWARE": {
-        "baslik": "SSH Brute Force ile Araç Kontrol Sistemine Fidye Yazılımı Yüklenmesi",
-        "zafiyet_adi": "Zayıf SSH Kimlik Doğrulaması (CWE-521) + Ransomware Deployment",
+        "baslik": "SSH Brute Force ile Arac Kontrol Sistemine Fidye Yazilimi Yuklenmesi",
+        "zafiyet_adi": "Zayif SSH Kimlik Dogrulamasi (CWE-521) + Ransomware Deployment",
         "cvss_skor": "9.9",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
-        "risk_seviyesi": "KRİTİK",
+        "risk_seviyesi": "KRITIK",
         "mitre": [
             {"id": "T1110.001", "taktor": "Credential Access", "teknik": "Brute Force: Password Guessing"},
-            {"id": "T1021.004", "taktor": "Lateral Movement", "teknik": "Remote Services: SSH"},
-            {"id": "T1486",     "taktor": "Impact",           "teknik": "Data Encrypted for Impact"},
-            {"id": "T1489",     "taktor": "Impact",           "teknik": "Service Stop"},
+            {"id": "T1021.004", "taktor": "Lateral Movement",  "teknik": "Remote Services: SSH"},
+            {"id": "T1486",     "taktor": "Impact",            "teknik": "Data Encrypted for Impact"},
+            {"id": "T1489",     "taktor": "Impact",            "teknik": "Service Stop"},
         ],
-        "poc": "$ hydra -l root -P wordlist.txt ssh://localhost:2222\n[22][ssh] host: localhost  login: root  password: 1234\n$ ssh root@localhost -p 2222\n# echo 'ENCRYPTED' > /app/control.py && pkill -f control.py",
-        "etki": "Araç kontrol dosyalarının şifrelenmesi, araç kontrol sürecinin sonlandırılması, tüm araçların durdurulması ve kavşakların kilitlenmesi",
-        "oneri": "SSH anahtar tabanlı kimlik doğrulama zorunlu hale getirilmeli, parola girişi devre dışı bırakılmalı, fail2ban veya benzeri araçlarla brute force koruması uygulanmalıdır.",
+        "poc": "$ hydra -l root -P wordlist.txt ssh://localhost:2222\n[22][ssh] host: localhost  login: root  password: 1234\n$ ssh root@localhost -p 2222\n# echo ENCRYPTED > /app/control.py && pkill -f control.py",
+        "etki": "Arac kontrol dosyalarinin sifrelenmesi, arac kontrol surecinin sonlandirilmasi, tum araclarin durdurulmasi ve kavsaklarin kilitlenmesi",
+        "oneri": "SSH anahtar tabanli kimlik dogrulama zorunlu hale getirilmeli, parola girisi devre disi birakilmali, fail2ban ile brute force korumasi uygulanmalidir.",
     },
     "ATTACK_SPEED_SPOOF": {
-        "baslik": "Kimlik Doğrulamasız Kontrol Soketi Üzerinden Araç Hız Manipülasyonu",
-        "zafiyet_adi": "Kimlik Doğrulamasız Ağ Soketi (CWE-306) + Güvensiz Doğrudan Nesne Referansı",
+        "baslik": "Kimlik Dogrulamasiz Kontrol Soketi Uzerinden Arac Hiz Manipulasyonu",
+        "zafiyet_adi": "Kimlik Dogrulamasiz Ag Soketi (CWE-306)",
         "cvss_skor": "9.1",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H",
-        "risk_seviyesi": "KRİTİK",
+        "risk_seviyesi": "KRITIK",
         "mitre": [
             {"id": "T1498",     "taktor": "Impact",    "teknik": "Network Denial of Service"},
             {"id": "T1565.001", "taktor": "Impact",    "teknik": "Stored Data Manipulation"},
-            {"id": "T1040",     "taktor": "Discovery", "teknik": "Network Sniffing"},
         ],
-        "poc": "# Port 444'e kimlik doğrulamasız bağlantı\n$ nc localhost 444\nSPEED:hedef_arac:0\nOK: Hiz komutu uygulaniyor\nSPEED:hedef_arac:50\nOK: Hiz komutu uygulaniyor",
-        "etki": "Hedef aracın hızının uzaktan 0 m/s ile 50 m/s (~180 km/h) arasında serbestçe manipüle edilmesi, trafik kazasına ve anarşiye yol açma",
-        "oneri": "Kontrol soketine token tabanlı kimlik doğrulama eklenmeli, komut formatı doğrulanmalı, TLS şifrelemesi uygulanmalıdır.",
+        "poc": "$ nc localhost 444\nSPEED:hedef_arac:0\nOK: Hiz komutu uygulaniyor\nSPEED:hedef_arac:50\nOK: Hiz komutu uygulaniyor",
+        "etki": "Hedef aracin hizinin 0 m/s ile 50 m/s (~180 km/h) arasinda serbestce manipule edilmesi, trafik kazasina yol acma",
+        "oneri": "Kontrol soketine token tabanli kimlik dogrulama eklenmeli, TLS sifrelemesi uygulanmalidir.",
     },
     "ATTACK_WEBPANEL_LOCKDOWN": {
-        "baslik": "Web Panel Üzerinden Araç Yönetim Sistemine Yetkisiz Erişim ve Araç Kilitleme",
-        "zafiyet_adi": "Bozuk Erişim Kontrolü (CWE-284) + SQL Injection Zinciri",
+        "baslik": "Web Panel Uzerinden Arac Yonetim Sistemine Yetkisiz Erisim ve Arac Kilitleme",
+        "zafiyet_adi": "Bozuk Erisim Kontrolu (CWE-284) + SQL Injection Zinciri",
         "cvss_skor": "9.6",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
-        "risk_seviyesi": "KRİTİK",
+        "risk_seviyesi": "KRITIK",
         "mitre": [
-            {"id": "T1190",     "taktor": "Initial Access",   "teknik": "Exploit Public-Facing Application"},
+            {"id": "T1190",     "taktor": "Initial Access",       "teknik": "Exploit Public-Facing Application"},
             {"id": "T1548",     "taktor": "Privilege Escalation", "teknik": "Abuse Elevation Control Mechanism"},
-            {"id": "T1499",     "taktor": "Impact",           "teknik": "Endpoint Denial of Service"},
+            {"id": "T1499",     "taktor": "Impact",               "teknik": "Endpoint Denial of Service"},
         ],
-        "poc": "# Adım 1: SQL Injection ile giriş\nPOST /login → username=' OR '1'='1\n# Adım 2: Araç yönetim paneline erişim\nGET /vehicles → HTTP 200 OK\n# Adım 3: Araç kilitleme\nPOST /vehicles/lock → LOCK_VEHICLE komutu iletildi",
-        "etki": "Hedef aracın uzaktan kilitlenmesi, tüm hareket komutlarına yanıtsız hale gelmesi, trafikte ani duruş ve çarpışma riski",
-        "oneri": "Oturum yönetimi güçlendirilmeli, /vehicles endpoint'ine yetkilendirme middleware'i eklenmeli, SQL injection için prepared statement kullanılmalıdır.",
+        "poc": "POST /login -> SQL Injection\nGET /vehicles -> HTTP 200 OK\nPOST /vehicles/lock -> LOCK_VEHICLE komutu iletildi",
+        "etki": "Hedef aracin uzaktan kilitlenmesi, trafik ici ani durus ve carpisme riski",
+        "oneri": "Oturum yonetimi guclendirilmeli, /vehicles endpoint'ine yetkilendirme middleware eklenmeli, SQL injection icin prepared statement kullanilmalidir.",
     },
-    "ATTACK_MOVEMENT_HACK": {
-        "baslik": "Araç Kontrol Soketi Üzerinden Rota ve Şerit Manipülasyonu",
-        "zafiyet_adi": "Kimlik Doğrulamasız Komut Enjeksiyonu (CWE-306 + CWE-77)",
-        "cvss_skor": "8.6",
+    "ATTACK_FAKE_VEHICLE": {
+        "baslik": "Sahte Arac Enjeksiyonu ile V2X Trafik Manipulasyonu (Sybil Saldirisi)",
+        "zafiyet_adi": "Kimlik Dogrulamasiz V2X Arac Enjeksiyon Soketi (CWE-306 + CWE-290)",
+        "cvss_skor": "8.2",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H",
-        "risk_seviyesi": "YÜKSEK",
+        "risk_seviyesi": "YUKSEK",
         "mitre": [
-            {"id": "T1565.001", "taktor": "Impact",    "teknik": "Stored Data Manipulation"},
-            {"id": "T1499",     "taktor": "Impact",    "teknik": "Endpoint Denial of Service"},
+            {"id": "T1200",     "taktor": "Initial Access", "teknik": "Hardware Additions"},
+            {"id": "T1565.002", "taktor": "Impact",         "teknik": "Transmitted Data Manipulation"},
+            {"id": "T1499",     "taktor": "Impact",         "teknik": "Endpoint Denial of Service"},
         ],
-        "poc": "$ nc localhost 444\nLANE:hedef_arac:1\nOK: Serit degistirme komutu uygulaniyor\nROUTE:hedef_arac:rota_movement_kaos\nOK: Rota degistirme komutu uygulaniyor",
-        "etki": "Aracın ani şerit değiştirmesi ve kaos rotasına yönlendirilmesi, trafik anarşisi ve çarpışma riski",
-        "oneri": "Kontrol soketine kimlik doğrulama ve komut beyaz listesi eklenmeli, rota değişikliklerinde sürücü onayı zorunlu tutulmalıdır.",
+        "poc": "$ nc localhost 444\nFAKE_VEHICLE\nOK: Sahte arac enjekte edildi\n# 5 sahte arac simulasyona eklendi\n# Trafik yogunlugu yapay olarak artirildi",
+        "etki": "Simulasyona sahte arac enjekte edilerek trafik yogunlugunun yapay artirilmasi ve kavsak algoritmalarinin yaniltilmasi",
+        "oneri": "V2X arac kimlik dogrulamasi icin PKI tabanli sertifika altyapisi kurulmali, arac kimlikleri kriptografik olarak dogrulanmalidir.",
+    },
+    "ATTACK_SENSOR_SPOOF": {
+        "baslik": "IoT Sensor API Zehirlenmesi ile Kavsak Algoritmasi Manipulasyonu",
+        "zafiyet_adi": "Kimlik Dogrulamasiz IoT Sensor API (CWE-306 + CWE-345)",
+        "cvss_skor": "8.6",
+        "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H",
+        "risk_seviyesi": "YUKSEK",
+        "mitre": [
+            {"id": "T1565.002", "taktor": "Impact",    "teknik": "Transmitted Data Manipulation"},
+            {"id": "T1498",     "taktor": "Impact",    "teknik": "Network Denial of Service"},
+        ],
+        "poc": "$ nc localhost 444\nATTACK_SENSOR_SPOOF\n# Enjekte edilen sahte sensor verisi:\n# vehicle_count: 999, speed: 0\n# Etki: Kavsak tum yonlerden asiri arac geldigini sanarak kilitlendi",
+        "etki": "Kavsak kontrol algoritmasina capraz yonlu sahte arac verisi enjekte edilerek tum sinyalizasyonun kilitlenmesi ve trafik felci",
+        "oneri": "IoT sensor verileri HMAC veya dijital imza ile dogrulanmali, anomali tespiti icin esik degerleri tanimlanmalidir.",
+    },
+    "ATTACK_IDS_SPOOF_STOP": {
+        "baslik": "IDS Yanlis Alarm Uretimi - Sahte Kaza Verisi ile Trafik Durdurma",
+        "zafiyet_adi": "IDS/IPS Atlatma via Sahte Sensor Verisi (CWE-345 + CWE-693)",
+        "cvss_skor": "7.5",
+        "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H",
+        "risk_seviyesi": "YUKSEK",
+        "mitre": [
+            {"id": "T1565.002", "taktor": "Impact",          "teknik": "Transmitted Data Manipulation"},
+            {"id": "T1562.001", "taktor": "Defense Evasion", "teknik": "Impair Defenses: Disable or Modify Tools"},
+        ],
+        "poc": "$ nc localhost 444\nATTACK_IDS_SPOOF_STOP\n# Tum araclara hiz=0 km/s sahte verisi\n# Etki: IDS sistemi kaza oldugunu sanarak tum kavsaklari durdurdu",
+        "etki": "Tum araclarin hizini 0 olarak raporlayan sahte sensor verisiyle IDS yanlis alarm uretmesi ve trafik sisteminin gereksiz yere durdurulmasi",
+        "oneri": "IDS sistemleri birden fazla bagimsiz sensor kaynagini capraz dogrulamali, tek kaynakli verilere dayanmamalidir.",
+    },
+    "ATTACK_IDS_SPOOF_SPEED": {
+        "baslik": "Isik Zamanlama Sabotaji - Asiri Hiz Verisi ile Kavsak Cokusu",
+        "zafiyet_adi": "Kavsak Kontrol Algoritmasi Manipulasyonu via Asiri Hiz Enjeksiyonu (CWE-345)",
+        "cvss_skor": "8.1",
+        "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H",
+        "risk_seviyesi": "YUKSEK",
+        "mitre": [
+            {"id": "T1565.002", "taktor": "Impact", "teknik": "Transmitted Data Manipulation"},
+            {"id": "T1499.002", "taktor": "Impact", "teknik": "Service Exhaustion Flood"},
+        ],
+        "poc": "$ nc localhost 444\nATTACK_IDS_SPOOF_SPEED\n# Tum araclara hiz=150 km/s sahte verisi\n# Etki: Kavsak algoritmasi coktu, isiklar 1 sn'de bir degisti (disko modu)",
+        "etki": "150 km/s sahte hiz verisiyle kavsak kontrolorunun cokmesi, trafik isiklainin kontrolsuz yanip sonmesi",
+        "oneri": "Sensor girdilerinde fiziksel olarak mumkun olmayan degerler icin sinir kontrolleri uygulanmali, outlier tespiti icin istatistiksel filtreler kullanilmalidir.",
+    },
+    "ATTACK_V2X_V2V": {
+        "baslik": "V2V Sybil Saldirisi - Sahte Acil Fren Sinyali ile Zincirleme Kaza",
+        "zafiyet_adi": "V2V Haberlesme Kimlik Sahteciligi (CWE-290 + CWE-345)",
+        "cvss_skor": "9.3",
+        "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H",
+        "risk_seviyesi": "KRITIK",
+        "mitre": [
+            {"id": "T1200",     "taktor": "Initial Access",    "teknik": "Hardware Additions"},
+            {"id": "T1565.002", "taktor": "Impact",            "teknik": "Transmitted Data Manipulation"},
+            {"id": "T1499",     "taktor": "Impact",            "teknik": "Endpoint Denial of Service"},
+            {"id": "T1557",     "taktor": "Credential Access", "teknik": "Adversary-in-the-Middle"},
+        ],
+        "poc": "$ nc localhost 444\nATTACK_V2X_V2V\n# 1. hedef_arac V2X anteni ele gecirildi\n# 2. Zombi arac 50m yaricapindaki tum araclara\n#    sahte Acil Fren sinyali yayinladi\n# 3. Komsu araclar panik freni yaparak zincirleme\n#    kazaya neden oldu",
+        "etki": "Hedef aracin V2X anteninin ele gecirilerek cevredeki tum otonom araclara sahte acil fren sinyali yayilmasi ve zincirleme trafik kazasina yol acilmasi",
+        "oneri": "V2V mesajlari ETSI ITS-G5 veya IEEE 802.11p standartlarina uygun PKI altyapiyla imzalanmali, arac sertifikalari CRL ile dogrulanmalidir.",
+    },
+    "ATTACK_V2X_V2I": {
+        "baslik": "V2I Altyapi Zehirlenmesi - Sahte OBU Verisiyle Akilli Kavsak Kilitleme",
+        "zafiyet_adi": "V2I Altyapi Protokolunde Kimlik Dogrulamasi Eksikligi (CWE-306 + CWE-290)",
+        "cvss_skor": "9.1",
+        "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H",
+        "risk_seviyesi": "KRITIK",
+        "mitre": [
+            {"id": "T1200",     "taktor": "Initial Access", "teknik": "Hardware Additions"},
+            {"id": "T1565.002", "taktor": "Impact",         "teknik": "Transmitted Data Manipulation"},
+            {"id": "T1498",     "taktor": "Impact",         "teknik": "Network Denial of Service"},
+        ],
+        "poc": "$ nc localhost 444\nATTACK_V2X_V2I\n# 1. Arac ici unite (OBU) ele gecirildi\n# 2. Kavsak RSU'suna sahte Acil Durum / Yuksek Hiz verisi gonderildi\n# 3. Akilli kavsak sahte veriye guvenerek kilitlendi",
+        "etki": "Arac ici unitenin (OBU) ele gecirilerek kavsak RSU'suna sahte acil durum verisi iletilmesi ve akilli kavsak sisteminin kilitlenmesi",
+        "oneri": "V2I altyapisinda RSU'lar yalnizca sertifikali OBU'lardan gelen imzali mesajlari kabul etmeli, anormallik tespiti icin davranissal analiz uygulanmalidir.",
     },
 }
-
 # Bilinmeyen senaryo için varsayılan
 DEFAULT_SCENARIO = {
     "baslik": "Genel Sızma Testi",
@@ -443,12 +515,23 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
                 return Spacer(1, 0)
             col_count = len(rows[0])
             col_width = (A4[0] - 4*cm) / col_count
-            t = Table(rows, colWidths=[col_width]*col_count, repeatRows=1 if header else 0)
+
+            # Hücre içeriklerini Paragraph'a çevir — Türkçe karakter desteği
+            s_cell      = ParagraphStyle("cell",   fontName=FONT_NORMAL, fontSize=9, leading=12)
+            s_cell_bold = ParagraphStyle("cell_b", fontName=FONT_BOLD,   fontSize=9, leading=12,
+                                         textColor=colors.white)
+            para_rows = []
+            for ri, row in enumerate(rows):
+                para_row = []
+                for ci, cell in enumerate(row):
+                    txt = str(cell).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                    style = s_cell_bold if (ri == 0 and header) else s_cell
+                    para_row.append(Paragraph(txt, style))
+                para_rows.append(para_row)
+
+            t = Table(para_rows, colWidths=[col_width]*col_count, repeatRows=1 if header else 0)
             style = [
                 ("BACKGROUND", (0,0), (-1,0), DARK if header else LIGHT),
-                ("TEXTCOLOR",  (0,0), (-1,0), colors.white if header else colors.black),
-                ("FONTNAME",   (0,0), (-1,0), FONT_BOLD),
-                ("FONTSIZE",   (0,0), (-1,-1), 9),
                 ("ALIGN",      (0,0), (-1,-1), "LEFT"),
                 ("VALIGN",     (0,0), (-1,-1), "MIDDLE"),
                 ("GRID",       (0,0), (-1,-1), 0.5, colors.HexColor("#dddddd")),
