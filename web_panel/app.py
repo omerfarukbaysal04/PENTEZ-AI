@@ -4,15 +4,20 @@ from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
 
-# --- AYARLAR ---
+# ── AYARLAR ─────────────────────────────────────────────────────────────────
 MANAGER_HOST = "host.docker.internal"
 MANAGER_PORT = 444
 
-# --- GÜVENLİK MODU ---
-SECURITY_MODE = os.environ.get("SECURITY_MODE", "VULNERABLE").upper()
-print(f"[MOD] Sistem modu: {SECURITY_MODE}")
+# ── GÜVENLİK AYARLARI (Saldırı Bazlı) ──────────────────────────────────────
+SQL_INJECTION_ENABLED = os.environ.get("SQL_INJECTION_ENABLED", "true").lower() == "true"
+WEBPANEL_LOCK_ENABLED = os.environ.get("WEBPANEL_LOCK_ENABLED", "true").lower() == "true"
+RANSOMWARE_ENABLED    = os.environ.get("RANSOMWARE_ENABLED",    "true").lower() == "true"
 
-# --- CSS ---
+print(f"[WEB_PANEL] SQL Injection    : {'VULNERABLE' if SQL_INJECTION_ENABLED else 'SECURE'}")
+print(f"[WEB_PANEL] Web Panel Lock   : {'VULNERABLE' if WEBPANEL_LOCK_ENABLED else 'SECURE'}")
+print(f"[WEB_PANEL] Ransomware       : {'VULNERABLE' if RANSOMWARE_ENABLED else 'SECURE'}")
+
+# ── CSS ──────────────────────────────────────────────────────────────────────
 COMMON_STYLE = """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap');
@@ -60,7 +65,6 @@ COMMON_STYLE = """
         z-index: 2;
     }
 
-    /* ── KARTLAR ── */
     .card {
         background: rgba(20,20,20,0.85);
         border: 1px solid #333;
@@ -72,15 +76,9 @@ COMMON_STYLE = """
         display: flex;
         flex-direction: column;
     }
-    .card:hover {
-        transform: translateY(-2px);
-        border-color: #00ff41;
-    }
-    .card .card-body {
-        flex: 1;
-    }
+    .card:hover { transform: translateY(-2px); border-color: #00ff41; }
+    .card .card-body { flex: 1; }
 
-    /* ── GRİD ── */
     .grid-2 {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -88,11 +86,8 @@ COMMON_STYLE = """
         align-items: stretch;
         margin-bottom: 20px;
     }
-    .grid-full {
-        margin-bottom: 20px;
-    }
+    .grid-full { margin-bottom: 20px; }
 
-    /* ── INPUT ── */
     input[type="text"], input[type="password"] {
         background: #111;
         border: 1px solid #444;
@@ -103,13 +98,8 @@ COMMON_STYLE = """
         border-radius: 4px;
         font-family: 'Share Tech Mono', monospace;
     }
-    input:focus {
-        outline: none;
-        border-color: #00ff41;
-        box-shadow: 0 0 8px rgba(0,255,65,0.3);
-    }
+    input:focus { outline: none; border-color: #00ff41; box-shadow: 0 0 8px rgba(0,255,65,0.3); }
 
-    /* ── BUTONLAR ── */
     .btn {
         width: 100%;
         padding: 15px;
@@ -127,19 +117,16 @@ COMMON_STYLE = """
         gap: 10px;
         margin-top: 12px;
     }
-    .btn-login  { background: #00ff41; color: #000; }
+    .btn-login      { background: #00ff41; color: #000; }
     .btn-login:hover { background: #00cc33; box-shadow: 0 0 15px #00ff41; }
-
-    .btn-hack   { background: linear-gradient(45deg,#cc0000,#990000); color:#fff; border:1px solid #ff0000; }
+    .btn-hack       { background: linear-gradient(45deg,#cc0000,#990000); color:#fff; border:1px solid #ff0000; }
     .btn-hack:hover { background: linear-gradient(45deg,#ff0000,#cc0000); box-shadow:0 0 20px rgba(255,0,0,.6); }
-
-    .btn-lock   { background: linear-gradient(45deg,#ff9900,#cc7a00); color:#000; border:1px solid #ffcc00; }
+    .btn-lock       { background: linear-gradient(45deg,#ff9900,#cc7a00); color:#000; border:1px solid #ffcc00; }
     .btn-lock:hover { background: linear-gradient(45deg,#ffcc00,#ff9900); box-shadow:0 0 20px rgba(255,153,0,.6); }
-
     .btn-ransomware { background: linear-gradient(45deg,#8b00ff,#5500aa); color:#fff; border:1px solid #cc00ff; }
     .btn-ransomware:hover { background: linear-gradient(45deg,#cc00ff,#8b00ff); box-shadow:0 0 20px rgba(139,0,255,.7); }
+    .btn-disabled   { background: #222; color: #555; border: 1px solid #333; cursor: not-allowed; }
 
-    /* ── STATUS DOT ── */
     .status-dot {
         height: 12px; width: 12px;
         background-color: #00ff41;
@@ -151,7 +138,6 @@ COMMON_STYLE = """
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-    /* ── KONSOL ── */
     .console-box {
         background-color: #000;
         border: 1px solid #333;
@@ -166,7 +152,6 @@ COMMON_STYLE = """
         margin-bottom: 40px;
     }
 
-    /* ── INFO KUTUSU ── */
     .info-box {
         background: #111;
         padding: 10px 14px;
@@ -177,7 +162,6 @@ COMMON_STYLE = """
         font-family: 'Share Tech Mono', monospace;
     }
 
-    /* ── BANNER ── */
     .secure-banner {
         background: linear-gradient(45deg,#003300,#004400);
         border: 2px solid #00ff41; color: #00ff41;
@@ -192,8 +176,14 @@ COMMON_STYLE = """
         font-family: 'Share Tech Mono', monospace;
         text-align: center; margin-bottom: 12px; font-size: 13px;
     }
+    .attack-blocked-banner {
+        background: linear-gradient(45deg,#003300,#004400);
+        border: 2px solid #00ff41; color: #00ff41;
+        padding: 8px 16px; border-radius: 4px;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 12px; margin-bottom: 8px;
+    }
 
-    /* ── TOPBAR ── */
     .topbar {
         width: 100%;
         background: #0a0a0a;
@@ -208,7 +198,7 @@ COMMON_STYLE = """
 </style>
 """
 
-# ── LOGIN SAYFASI ──
+# ── LOGIN SAYFASI ────────────────────────────────────────────────────────────
 LOGIN_PAGE = COMMON_STYLE + """
 <html>
 <head><title>Sistem Girişi</title></head>
@@ -216,10 +206,10 @@ LOGIN_PAGE = COMMON_STYLE + """
     <div class="scanline"></div>
     <div class="container" style="max-width:420px; margin-top:90px;">
         <div class="card">
-            {% if mode == 'VULNERABLE' %}
-            <div class="vulnerable-banner">⚠️ MOD: ZAFİYETLİ (VULNERABLE) ⚠️</div>
+            {% if sql_blocked %}
+            <div class="secure-banner">🛡️ SQL INJECTION KORUМASI AKTİF 🛡️</div>
             {% else %}
-            <div class="secure-banner">🛡️ MOD: GÜVENLİ (SECURE) 🛡️</div>
+            <div class="vulnerable-banner">⚠️ SQL INJECTION ZAFİYETİ AKTİF ⚠️</div>
             {% endif %}
             <h2 style="color:#00ff41; text-align:center; margin-bottom:24px; text-shadow:0 0 10px rgba(0,255,65,.5);">
                 <span class="status-dot"></span>SİSTEM GİRİŞİ
@@ -240,13 +230,12 @@ LOGIN_PAGE = COMMON_STYLE + """
 </html>
 """
 
-# ── DASHBOARD SAYFASI ──
+# ── DASHBOARD SAYFASI ────────────────────────────────────────────────────────
 DASHBOARD_PAGE = COMMON_STYLE + """
 <html>
 <head><title>Komuta Kontrol Merkezi</title></head>
 <body>
     <div class="scanline"></div>
-
     <div class="topbar">
         <div class="topbar-inner">
             <div>
@@ -265,10 +254,9 @@ DASHBOARD_PAGE = COMMON_STYLE + """
     </div>
 
     <div class="container">
-
-        <!-- ÜST İKİ KART -->
         <div class="grid-2">
 
+            <!-- HACK LIGHTS -->
             <div class="card">
                 <h3 style="color:#ff3333; border-bottom:1px solid #2a2a2a; padding-bottom:10px; margin-top:0;">
                     ⚠️ KRİTİK ALTYAPI SALDIRISI
@@ -284,17 +272,19 @@ DASHBOARD_PAGE = COMMON_STYLE + """
                 </div>
                 <form method="POST" action="/send_command">
                     <input type="hidden" name="cmd" value="HACK_LIGHTS">
-                    <button type="submit" class="btn btn-hack">
-                        🚨 TÜM IŞIKLARI YEŞİL YAP
-                    </button>
+                    <button type="submit" class="btn btn-hack">🚨 TÜM IŞIKLARI YEŞİL YAP</button>
                 </form>
             </div>
 
+            <!-- WEB PANEL LOCKDOWN -->
             <div class="card">
                 <h3 style="color:#ff9900; border-bottom:1px solid #2a2a2a; padding-bottom:10px; margin-top:0;">
                     🦠 ARAÇ KİLİTLEME
                 </h3>
                 <div class="card-body">
+                    {% if not webpanel_lock_enabled %}
+                    <div class="attack-blocked-banner">🛡️ SECURE: Araç kilitleme koruması aktif</div>
+                    {% endif %}
                     <p style="color:#999; font-size:14px; margin:0 0 6px;">
                         Hedef aracın ECU sistemine sızarak frenleri kilitler ve aracı durdurur.
                     </p>
@@ -305,24 +295,28 @@ DASHBOARD_PAGE = COMMON_STYLE + """
                 </div>
                 <form method="POST" action="/send_command">
                     <input type="hidden" name="cmd" value="HACK_VEHICLE">
-                    <button type="submit" class="btn btn-lock">
-                        🔒 ARACI KİLİTLE
-                    </button>
+                    {% if webpanel_lock_enabled %}
+                    <button type="submit" class="btn btn-lock">🔒 ARACI KİLİTLE</button>
+                    {% else %}
+                    <button type="button" class="btn btn-disabled" disabled>🛡️ ENGELLENDI</button>
+                    {% endif %}
                 </form>
             </div>
 
         </div>
 
-        <!-- RANSOMWARE KARTI -->
+        <!-- RANSOMWARE -->
         <div class="grid-full">
             <div class="card">
                 <h3 style="color:#cc00ff; border-bottom:1px solid #2a2a2a; padding-bottom:10px; margin-top:0;">
                     💀 RANSOMWARE SALDIRISI
                 </h3>
                 <div class="card-body">
+                    {% if not ransomware_enabled %}
+                    <div class="attack-blocked-banner">🛡️ SECURE: Ransomware koruması aktif</div>
+                    {% endif %}
                     <p style="color:#999; font-size:14px; margin:0 0 6px;">
                         Trafik yönetim sürecini sonlandırır, kritik dosyaları kilitler ve sistemde fidye notu bırakır.
-                        Tüm trafik kontrolü devre dışı kalır.
                     </p>
                     <div class="info-box" style="color:#cc00ff;">
                         HEDEF: traffic_manager.py (PID) &nbsp;|&nbsp;
@@ -332,9 +326,11 @@ DASHBOARD_PAGE = COMMON_STYLE + """
                 </div>
                 <form method="POST" action="/send_command">
                     <input type="hidden" name="cmd" value="RANSOMWARE">
-                    <button type="submit" class="btn btn-ransomware">
-                        💀 RANSOMWARE BAŞLAT
-                    </button>
+                    {% if ransomware_enabled %}
+                    <button type="submit" class="btn btn-ransomware">💀 RANSOMWARE BAŞLAT</button>
+                    {% else %}
+                    <button type="button" class="btn btn-disabled" disabled>🛡️ ENGELLENDİ</button>
+                    {% endif %}
                 </form>
             </div>
         </div>
@@ -347,39 +343,31 @@ DASHBOARD_PAGE = COMMON_STYLE + """
                     Bağlı araçları görüntüle ve uzaktan kontrol et.
                 </p>
                 <a href="/vehicles" style="text-decoration:none;">
-                    <button class="btn btn-lock" style="margin-top:0;">
-                        🔗 ARAÇ PANELİNE GİT
-                    </button>
+                    <button class="btn btn-lock" style="margin-top:0;">🔗 ARAÇ PANELİNE GİT</button>
                 </a>
             </div>
         </div>
 
-        <!-- KONSOL -->
         <div class="console-box">
             <span style="color:#444;">root@admin-panel:~$</span>
             <span> {{ message }}</span>
             <span style="margin-left:4px; opacity:.7;">▌</span>
         </div>
-
     </div>
 </body>
 </html>
 """
 
-
-# ── ARAÇ YÖNETİM SAYFASI ──
+# ── ARAÇ YÖNETİM SAYFASI ────────────────────────────────────────────────────
 VEHICLES_PAGE = COMMON_STYLE + """
 <html>
 <head><title>Araç Yönetim Paneli</title></head>
 <body>
     <div class="scanline"></div>
-
     <div class="topbar">
         <div class="topbar-inner">
             <div>
-                <h2 style="margin:0; font-size:22px; text-shadow:0 0 10px rgba(0,255,65,.4);">
-                    ARAÇ YÖNETİM SİSTEMİ
-                </h2>
+                <h2 style="margin:0; font-size:22px;">ARAÇ YÖNETİM SİSTEMİ</h2>
                 <span style="color:#555; font-size:11px; font-family:monospace;">VEHICLE MANAGEMENT // ADMIN_ACCESS</span>
             </div>
             <div style="text-align:right;">
@@ -398,21 +386,25 @@ VEHICLES_PAGE = COMMON_STYLE + """
                     🚗 ARAÇ KONTROL PANELİ — hedef_arac (34 TEZ 2026)
                 </h3>
                 <div class="card-body">
+                    {% if not webpanel_lock_enabled %}
+                    <div class="attack-blocked-banner">🛡️ SECURE: Araç kilitleme koruması aktif — bu komut engellendi</div>
+                    {% endif %}
                     <p style="color:#999; font-size:14px; margin:0 0 6px;">
-                        Araç kontrol sistemine uzaktan erişim sağlandı. Aracı kilitleyerek tüm hareket
-                        komutlarını devre dışı bırakabilirsiniz. Araç trafikte ani duruş yaparak anarşiye sebep olur.
+                        Araç kontrol sistemine uzaktan erişim sağlandı.
                     </p>
                     <div class="info-box" style="color:#ff9900;">
                         ARAÇ ID &nbsp;: hedef_arac<br>
                         PLAKA &nbsp;&nbsp;: 34 TEZ 2026<br>
                         DURUM &nbsp;&nbsp;: AKTİF — Seyir Halinde<br>
-                        ZAFİYET : Uzaktan Komut Enjeksiyonu (Port 9999)
+                        ZAFİYET : Uzaktan Komut Enjeksiyonu (Port 444)
                     </div>
                 </div>
                 <form method="POST" action="/vehicles/lock">
-                    <button type="submit" class="btn btn-lock">
-                        🔒 ARACI UZAKTAN KİLİTLE
-                    </button>
+                    {% if webpanel_lock_enabled %}
+                    <button type="submit" class="btn btn-lock">🔒 ARACI UZAKTAN KİLİTLE</button>
+                    {% else %}
+                    <button type="button" class="btn btn-disabled" disabled>🛡️ ENGELLENDİ</button>
+                    {% endif %}
                 </form>
             </div>
         </div>
@@ -427,7 +419,7 @@ VEHICLES_PAGE = COMMON_STYLE + """
 </html>
 """
 
-# ── HATA SAYFASI ──
+# ── HATA SAYFASI ─────────────────────────────────────────────────────────────
 ERROR_PAGE = COMMON_STYLE + """
 <html>
 <head><title>Erişim Reddedildi</title></head>
@@ -457,7 +449,7 @@ ERROR_PAGE = COMMON_STYLE + """
 </html>
 """
 
-# ── YARDIMCI FONKSİYONLAR ──
+# ── YARDIMCI FONKSİYONLAR ────────────────────────────────────────────────────
 
 def send_to_manager(command):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -483,70 +475,118 @@ def is_sql_injection(value: str) -> bool:
     ]
     return any(kw in value.lower() for kw in sql_keywords)
 
-# ── ROTALAR ──
+# ── ROTALAR ──────────────────────────────────────────────────────────────────
 
 @app.route('/', methods=['GET'])
 def home():
-    return render_template_string(LOGIN_PAGE, mode=SECURITY_MODE)
+    return render_template_string(
+        LOGIN_PAGE,
+        sql_blocked=not SQL_INJECTION_ENABLED
+    )
 
 @app.route('/login', methods=['POST'])
 def login():
     username = request.form.get('username', '')
     password = request.form.get('password', '')
 
-    if SECURITY_MODE == "VULNERABLE":
-        if password == "admin123" \
-                or "' or '1'='1" in username.lower() \
-                or "' or '1'='1" in password.lower():
-            return render_template_string(
-                DASHBOARD_PAGE,
-                message="[VULNERABLE] SQL Injection ile sisteme girildi!"
-            )
-        return render_template_string(
-            LOGIN_PAGE + "<h3 style='color:red;text-align:center;'>HATALI ŞİFRE!</h3>",
-            mode=SECURITY_MODE
-        )
-    else:
+    # SQL Injection zafiyeti KAPALI
+    if not SQL_INJECTION_ENABLED:
         if is_sql_injection(username) or is_sql_injection(password):
             print(f"[SECURE] SQL Injection engellendi! username='{username}'")
             return render_template_string(ERROR_PAGE)
         if username == "admin" and password == "admin123":
             return render_template_string(
                 DASHBOARD_PAGE,
-                message="[SECURE] Kimlik doğrulama başarılı. Hoş geldin, admin."
+                message="[SECURE] Kimlik doğrulama başarılı. Hoş geldin, admin.",
+                webpanel_lock_enabled=WEBPANEL_LOCK_ENABLED,
+                ransomware_enabled=RANSOMWARE_ENABLED
             )
         return render_template_string(
             LOGIN_PAGE + "<h3 style='color:red;text-align:center;'>HATALI ŞİFRE!</h3>",
-            mode=SECURITY_MODE
+            sql_blocked=True
         )
+
+    # SQL Injection zafiyeti AÇIK
+    if password == "admin123" \
+            or "' or '1'='1" in username.lower() \
+            or "' or '1'='1" in password.lower():
+        return render_template_string(
+            DASHBOARD_PAGE,
+            message="[VULNERABLE] SQL Injection ile sisteme girildi!",
+            webpanel_lock_enabled=WEBPANEL_LOCK_ENABLED,
+            ransomware_enabled=RANSOMWARE_ENABLED
+        )
+    return render_template_string(
+        LOGIN_PAGE + "<h3 style='color:red;text-align:center;'>HATALI ŞİFRE!</h3>",
+        sql_blocked=False
+    )
 
 @app.route('/send_command', methods=['POST'])
 def send_command():
     cmd = request.form.get('cmd', '')
-    if SECURITY_MODE == "SECURE" and cmd == "RANSOMWARE":
+
+    # Ransomware koruması
+    if cmd == "RANSOMWARE" and not RANSOMWARE_ENABLED:
         msg = "[SECURE] Ransomware komutu güvenlik sistemi tarafından engellendi!"
-        return render_template_string(DASHBOARD_PAGE, message=msg)
+        return render_template_string(
+            DASHBOARD_PAGE, message=msg,
+            webpanel_lock_enabled=WEBPANEL_LOCK_ENABLED,
+            ransomware_enabled=RANSOMWARE_ENABLED
+        )
+
+    # Web Panel Lockdown koruması
+    if cmd == "HACK_VEHICLE" and not WEBPANEL_LOCK_ENABLED:
+        msg = "[SECURE] Araç kilitleme komutu güvenlik sistemi tarafından engellendi!"
+        return render_template_string(
+            DASHBOARD_PAGE, message=msg,
+            webpanel_lock_enabled=WEBPANEL_LOCK_ENABLED,
+            ransomware_enabled=RANSOMWARE_ENABLED
+        )
+
     msg = send_to_manager(cmd)
-    return render_template_string(DASHBOARD_PAGE, message=msg)
+    return render_template_string(
+        DASHBOARD_PAGE, message=msg,
+        webpanel_lock_enabled=WEBPANEL_LOCK_ENABLED,
+        ransomware_enabled=RANSOMWARE_ENABLED
+    )
 
 @app.route('/vehicles', methods=['GET'])
 def vehicles():
-    # SECURE modda: sadece oturum açmış kullanıcılar erişebilir
-    # Basit simülasyon için referer kontrolü yapıyoruz
-    if SECURITY_MODE == "SECURE":
+    if not WEBPANEL_LOCK_ENABLED:
         referer = request.headers.get('Referer', '')
         if 'localhost:5000' not in referer and '127.0.0.1:5000' not in referer:
             return render_template_string(ERROR_PAGE)
-    return render_template_string(VEHICLES_PAGE, message="Araç yönetim sistemine bağlanıldı.")
+    return render_template_string(
+        VEHICLES_PAGE,
+        message="Araç yönetim sistemine bağlanıldı.",
+        webpanel_lock_enabled=WEBPANEL_LOCK_ENABLED
+    )
 
 @app.route('/vehicles/lock', methods=['POST'])
 def lock_vehicle():
-    if SECURITY_MODE == "SECURE":
+    if not WEBPANEL_LOCK_ENABLED:
         msg = "[SECURE] Araç kilitleme komutu güvenlik sistemi tarafından engellendi!"
-        return render_template_string(VEHICLES_PAGE, message=msg)
-    msg = send_to_manager("LOCK_VEHICLE")
-    return render_template_string(VEHICLES_PAGE,
-        message="[LOCKDOWN] hedef_arac kilitlendi! Araç tüm hareket komutlarına yanıtsız.")
+        return render_template_string(
+            VEHICLES_PAGE, message=msg,
+            webpanel_lock_enabled=WEBPANEL_LOCK_ENABLED
+        )
+    send_to_manager("LOCK_VEHICLE")
+    return render_template_string(
+        VEHICLES_PAGE,
+        message="[LOCKDOWN] hedef_arac kilitlendi! Araç tüm hareket komutlarına yanıtsız.",
+        webpanel_lock_enabled=WEBPANEL_LOCK_ENABLED
+    )
+
+@app.route('/security-status', methods=['GET'])
+def security_status():
+    """Saldırı bazlı güvenlik durumunu JSON olarak döner."""
+    from flask import jsonify
+    return jsonify({
+        "sql_injection": SQL_INJECTION_ENABLED,
+        "webpanel_lock": WEBPANEL_LOCK_ENABLED,
+        "ransomware":    RANSOMWARE_ENABLED,
+    })
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)

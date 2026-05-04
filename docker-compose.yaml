@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   # Zafiyetli Web Paneli
@@ -10,20 +8,26 @@ services:
     volumes:
       - ./web_panel:/app
     environment:
-      SECURITY_MODE: VULNERABLE   # SECURE veya VULNERABLE
+      SQL_INJECTION_ENABLED: "false"
+      WEBPANEL_LOCK_ENABLED: "true"
+      RANSOMWARE_ENABLED:    "true"    # Ransomware zafiyeti
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   # Zafiyetli Araç Kontrol Servisi
-  # Zafiyet 1: SSH açık, şifre zayıf (root:1234)
-  # Zafiyet 2: Port 444 kimlik doğrulamasız hız kontrol soketi
   vehicle_controller:
     build: ./vehicle_controller
     ports:
       - "2222:22"    # SSH — ransomware saldırısı
-      - "444:444"    # Hız kontrol soketi — speed spoof saldırısı
     container_name: vehicle_controller
     environment:
-      SECURITY_MODE: VULNERABLE   # SECURE veya VULNERABLE
+      SSH_ENABLED: "true"
+      SPEED_SPOOF_ENABLED: "false"
+      IOT_SENSOR_ENABLED: "true"
+      IDS_FALSE_ALARM_ENABLED: "true"
+      IDS_TIMING_ENABLED: "true"
+      FAKE_VEHICLE_ENABLED: "false"
+      V2V_ENABLED: "true"
+      V2I_ENABLED: "true"
     extra_hosts:
       - "host.docker.internal:host-gateway"

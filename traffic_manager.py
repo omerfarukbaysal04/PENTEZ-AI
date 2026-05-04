@@ -6,6 +6,8 @@ import sys
 import os
 import signal
 import random
+import json
+import re
 
 # --- AYARLAR ---
 SUMO_CMD = ["sumo-gui", "-c", "simulation.sumocfg", "--start"]
@@ -30,6 +32,71 @@ RANSOM_NOTE = """
 
 command_queue = []
 ransomware_triggered = False
+
+
+def read_security_flags():
+    flags = {
+        "sql_injection": True,
+        "webpanel_lock": True,
+        "ransomware": True,
+        "ssh": True,
+        "speed_spoof": True,
+        "iot_sensor": True,
+        "ids_false_alarm": True,
+        "ids_timing": True,
+        "fake_vehicle": True,
+        "v2v": True,
+        "v2i": True,
+    }
+    mapping = {
+        "SQL_INJECTION_ENABLED": "sql_injection",
+        "WEBPANEL_LOCK_ENABLED": "webpanel_lock",
+        "RANSOMWARE_ENABLED": "ransomware",
+        "SSH_ENABLED": "ssh",
+        "SPEED_SPOOF_ENABLED": "speed_spoof",
+        "IOT_SENSOR_ENABLED": "iot_sensor",
+        "IDS_FALSE_ALARM_ENABLED": "ids_false_alarm",
+        "IDS_TIMING_ENABLED": "ids_timing",
+        "FAKE_VEHICLE_ENABLED": "fake_vehicle",
+        "V2V_ENABLED": "v2v",
+        "V2I_ENABLED": "v2i",
+    }
+
+    compose_path = os.path.join(os.path.dirname(__file__), "docker-compose.yaml")
+    try:
+        with open(compose_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception:
+        return flags
+
+    for env_key, flag_key in mapping.items():
+        match = re.search(rf"^\s*{env_key}:\s*[\"']?(true|false)[\"']?", content, re.IGNORECASE | re.MULTILINE)
+        if match:
+            flags[flag_key] = match.group(1).lower() == "true"
+
+    return flags
+
+
+def command_block_reason(command, flags):
+    if command.startswith("SPEED:") and not flags["speed_spoof"]:
+        return "Speed Spoof"
+    if command in ("ATTACK_SENSOR_SPOOF",) and not flags["iot_sensor"]:
+        return "IoT Sensor Zehirleme"
+    if command == "ATTACK_IDS_SPOOF_STOP" and not flags["ids_false_alarm"]:
+        return "IDS Yanlis Alarm"
+    if command == "ATTACK_IDS_SPOOF_SPEED" and not flags["ids_timing"]:
+        return "IDS Zamanlama Sabotaji"
+    if command.startswith("FAKE_VEHICLE") and not flags["fake_vehicle"]:
+        return "Fake Vehicle"
+    if command == "ATTACK_V2X_V2V" and not flags["v2v"]:
+        return "V2V Saldirisi"
+    if command == "ATTACK_V2X_V2I" and not flags["v2i"]:
+        return "V2I Saldirisi"
+    if command in ("HACK_VEHICLE", "LOCK_VEHICLE") and not flags["webpanel_lock"]:
+        return "Web Panel Lockdown"
+    if command == "RANSOMWARE" and not flags["ransomware"]:
+        return "Ransomware"
+    return None
 
 
 def drop_ransom_note():
@@ -89,7 +156,29 @@ def start_socket_server():
             client, addr = server.accept()
             data = client.recv(1024).decode('utf-8')
             if data:
+                data = data.strip()
                 print(f">>> [KOMUT ALINDI] Mesaj: {data}")
+                flags = read_security_flags()
+                if data == "STATUS":
+                    client.send(json.dumps({
+                        "ssh": flags["ssh"],
+                        "speed_spoof": flags["speed_spoof"],
+                        "iot_sensor": flags["iot_sensor"],
+                        "ids_false_alarm": flags["ids_false_alarm"],
+                        "ids_timing": flags["ids_timing"],
+                        "fake_vehicle": flags["fake_vehicle"],
+                        "v2v": flags["v2v"],
+                        "v2i": flags["v2i"],
+                    }).encode("utf-8"))
+                    client.close()
+                    continue
+
+                block_reason = command_block_reason(data, flags)
+                if block_reason:
+                    client.send(f"BLOCKED: {block_reason} guvenlik sistemi tarafindan engellendi.".encode("utf-8"))
+                    client.close()
+                    continue
+
                 command_queue.append(data)
                 client.send(b"OK")
             client.close()

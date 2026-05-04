@@ -3,6 +3,8 @@ import time
 import sys
 import os
 
+print("[BOOT] PENTEZ-AI pentest araci yukleniyor...", flush=True)
+
 try:
     from blackboard import Blackboard
     from llm_brain import StrategicAgent
@@ -10,7 +12,6 @@ try:
     from agents.web_agent import WebAnalysisAgent
     from agents.exploit_agent import ExploitAgent
     from agents.ransomware_agent import RansomwareAgent
-    from agents.reporting_agent import ReportingAgent
 except ImportError as e:
     print(f"HATA: Modüller bulunamadı! {e}")
     sys.exit(1)
@@ -46,9 +47,32 @@ SCENARIO_MAP = {
     "LOGIN_PAGE_FOUND":             ("ATTACK_SQL",          "SQL Injection (Web Panel)"),
     "WEBPANEL_LOCKDOWN":            ("ATTACK_WEBPANEL_LOCKDOWN", "Web Panel Lockdown (Araç Kilitleme)"),
     "UNAUTHENTICATED_VEHICLE_INJECTION": ("ATTACK_FAKE_VEHICLE", "Fake Vehicle (Sybil)"),
-    "UNAUTHENTICATED_SENSOR_API":   ("CATEGORY_IOT_ATTACKS", "IoT Sensör Zafiyetleri (Alt Menü)"),
-    "UNAUTHENTICATED_V2X_API":      ("CATEGORY_V2X_ATTACKS", "V2X Haberleşme Ağ Saldırıları (Alt Menü)"),
+    "UNAUTHENTICATED_SENSOR_API":   ("ATTACK_SENSOR_SPOOF", "IoT Sensör Zehirleme (Çapraz Yönlü)"),
+    "IDS_FALSE_ALARM_VULN":         ("ATTACK_IDS_SPOOF_STOP", "IDS Yanlış Alarm (Acil Araç Filosu)"),
+    "IDS_TIMING_VULN":              ("ATTACK_IDS_SPOOF_SPEED", "Işık Zamanlama Sabotajı (Disko Modu)"),
+    "UNAUTHENTICATED_V2V_API":      ("ATTACK_V2X_V2V", "V2V Yanlış Bilgi Yayılımı (Şok Dalgası)"),
+    "UNAUTHENTICATED_V2I_API":      ("ATTACK_V2X_V2I", "V2I Altyapı Zehirlenmesi (İçeriden)"),
 }
+
+SUB_SCENARIO_LABELS = {
+    "UNAUTHENTICATED_SENSOR_API": "5 - IoT Sensor Zehirleme",
+    "IDS_FALSE_ALARM_VULN": "6 - IDS Yanlis Alarm",
+    "IDS_TIMING_VULN": "7 - Isik Zamanlama Sabotaji",
+    "UNAUTHENTICATED_V2V_API": "9 - V2V Yanlis Bilgi Yayilimi",
+    "UNAUTHENTICATED_V2I_API": "10 - V2I Altyapi Zehirlenmesi",
+}
+
+
+def describe_grouped_vulns(action, vulns):
+    if action == "CATEGORY_IOT_ATTACKS":
+        keys = ["UNAUTHENTICATED_SENSOR_API", "IDS_FALSE_ALARM_VULN", "IDS_TIMING_VULN"]
+    elif action == "CATEGORY_V2X_ATTACKS":
+        keys = ["UNAUTHENTICATED_V2V_API", "UNAUTHENTICATED_V2I_API"]
+    else:
+        return []
+
+    return [SUB_SCENARIO_LABELS[key] for key in keys if key in vulns]
+
 
 def ask_user_scenario(vulns):
     """Bulunan zafiyetleri göster, kullanıcıya senaryo seçtir"""
@@ -57,18 +81,27 @@ def ask_user_scenario(vulns):
     print(f"{Colors.WARNING}{'='*55}{Colors.ENDC}")
 
     available = []
-    for i, vuln in enumerate(vulns):
+    seen_actions = set()
+    for vuln in vulns:
         if vuln in SCENARIO_MAP:
             action, label = SCENARIO_MAP[vuln]
+            if action in seen_actions:
+                continue
+            seen_actions.add(action)
             available.append((vuln, action, label))
-            print(f"  [{i+1}] {label}")
-            print(f"       Zafiyet : {vuln}")
-            print(f"       Saldırı : {action}")
-            print()
 
     if not available:
         print(f"{Colors.FAIL}  Exploit edilebilir zafiyet bulunamadı.{Colors.ENDC}")
         return None
+
+    for i, (vuln, action, label) in enumerate(available, start=1):
+        print(f"  [{i}] {label}")
+        print(f"       Zafiyet : {vuln}")
+        print(f"       Saldırı : {action}")
+        grouped = describe_grouped_vulns(action, vulns)
+        if grouped:
+            print(f"       Acik alt senaryolar : {', '.join(grouped)}")
+        print()
 
     print(f"{Colors.WARNING}{'='*55}{Colors.ENDC}")
     while True:
@@ -80,44 +113,44 @@ def ask_user_scenario(vulns):
                 
                 if action == "CATEGORY_IOT_ATTACKS":
                     print(f"\n{Colors.WARNING}>>> IoT SENSÖR SALDIRI VEKTÖRLERİ:{Colors.ENDC}")
-                    print("  [A] Çapraz Yönlü Zehirleme (Kavşak Kilitleme)")
-                    print("  [B] IDS Yanlış Alarm Üretimi (Hız = 0 km/s)")
-                    print("  [C] Işık Zamanlama Sabotajı (Hız = 150 km/s)")
+                    iot_options = {}
+                    if "UNAUTHENTICATED_SENSOR_API" in vulns:
+                        iot_options["A"] = ("ATTACK_SENSOR_SPOOF", "Çapraz Yönlü Zehirleme (Kavşak Kilitleme)")
+                    if "IDS_FALSE_ALARM_VULN" in vulns:
+                        iot_options["B"] = ("ATTACK_IDS_SPOOF_STOP", "IDS Yanlış Alarm Üretimi (Hız = 0 km/s)")
+                    if "IDS_TIMING_VULN" in vulns:
+                        iot_options["C"] = ("ATTACK_IDS_SPOOF_SPEED", "Işık Zamanlama Sabotajı (Hız = 150 km/s)")
+
+                    for key, (_, option_label) in iot_options.items():
+                        print(f"  [{key}] {option_label}")
                     
                     alt_secim = input(f"{Colors.CYAN}>>> Seçiminiz (A/B/C): {Colors.ENDC}").strip().upper()
                     
-                    if alt_secim == 'A':
-                        action = "ATTACK_SENSOR_SPOOF"
-                        label = "Çapraz Yönlü Zehirleme (Kavşak Kilitleme)"
-                    elif alt_secim == 'B':
-                        action = "ATTACK_IDS_SPOOF_STOP"
-                        label = "IDS Yanlış Alarm Üretimi (Hız = 0 km/s)"
-                    elif alt_secim == 'C':
-                        action = "ATTACK_IDS_SPOOF_SPEED"
-                        label = "Işık Zamanlama Sabotajı (Hız = 150 km/s)"
+                    if alt_secim in iot_options:
+                        action, label = iot_options[alt_secim]
                     else:
-                        print(f"{Colors.FAIL}❌ Geçersiz seçim, A senaryosu varsayılan olarak seçildi.{Colors.ENDC}")
-                        action = "ATTACK_SENSOR_SPOOF"
-                        label = "Çapraz Yönlü Zehirleme (Kavşak Kilitleme)"
+                        print(f"{Colors.FAIL}❌ Geçersiz veya kapalı senaryo seçimi.{Colors.ENDC}")
+                        return None
                 # --------------------------------------
 
                 elif action == "CATEGORY_V2X_ATTACKS":
                     print(f"\n{Colors.WARNING}>>> V2X HABERLEŞME AĞI SALDIRILARI:{Colors.ENDC}")
-                    print("  [A] V2V Yanlış Bilgi Yayılımı (Araçtan Araca Şok Dalgası)")
-                    print("  [B] V2I Altyapı Zehirlenmesi (OBU Üzerinden Kavşak Manipülasyonu)")
+                    v2x_options = {}
+                    if "UNAUTHENTICATED_V2V_API" in vulns:
+                        v2x_options["A"] = ("ATTACK_V2X_V2V", "V2V Yanlış Bilgi Yayılımı (Zombi Araç ile Kaza)")
+                    if "UNAUTHENTICATED_V2I_API" in vulns:
+                        v2x_options["B"] = ("ATTACK_V2X_V2I", "V2I Altyapı Zehirlenmesi (Kavşak Kilitleme)")
+
+                    for key, (_, option_label) in v2x_options.items():
+                        print(f"  [{key}] {option_label}")
                     
                     alt_secim = input(f"{Colors.CYAN}>>> Seçiminiz (A/B): {Colors.ENDC}").strip().upper()
                     
-                    if alt_secim == 'A':
-                        action = "ATTACK_V2X_V2V"
-                        label = "V2V Yanlış Bilgi Yayılımı (Zombi Araç ile Kaza)"
-                    elif alt_secim == 'B':
-                        action = "ATTACK_V2X_V2I"
-                        label = "V2I Altyapı Zehirlenmesi (Kavşak Kilitleme)"
+                    if alt_secim in v2x_options:
+                        action, label = v2x_options[alt_secim]
                     else:
-                        print(f"{Colors.FAIL}❌ Geçersiz seçim, A senaryosu varsayılan olarak seçildi.{Colors.ENDC}")
-                        action = "ATTACK_V2X_V2V"
-                        label = "V2V Yanlış Bilgi Yayılımı (Zombi Araç ile Kaza)"
+                        print(f"{Colors.FAIL}❌ Geçersiz veya kapalı senaryo seçimi.{Colors.ENDC}")
+                        return None
 
                 print(f"\n{Colors.GREEN}  ✅ Seçilen senaryo: {label}{Colors.ENDC}\n")
                 return action
@@ -295,6 +328,7 @@ def main():
         
         if cevap == 'e':
             print(f"\n{Colors.GREEN}>>> RAPORLAMA AJANI (LLM) aktif ediliyor...{Colors.ENDC}")
+            from agents.reporting_agent import ReportingAgent
             # Ajanı başlat (Kullanıcının başta seçtiği model parametresiyle)
             raportor = ReportingAgent(model_name=args.model)
             raportor.generate_report(bb)
