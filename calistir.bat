@@ -27,7 +27,7 @@ echo [2/4] Web Paneli ve Vehicle Controller (Docker) baslatiliyor...
 start "Hacker Paneli" "%~dp0docker_baslat.bat"
 
 :: 3. Bekle (Docker hazırlansın)
-echo [2/4] Web sunucusu hazirlaniyor (8 sn)...
+echo [3/4] Web sunucusu hazirlaniyor (8 sn)...
 timeout /t 8 >nul
 
 
@@ -66,6 +66,10 @@ taskkill /F /IM python.exe /T >nul 2>&1
 
 echo [-] Docker temizleniyor...
 docker-compose down
+
+echo [-] Yardimci CMD pencereleri kapatiliyor...
+taskkill /F /T /FI "WINDOWTITLE eq Hacker Paneli*" >nul 2>&1
+taskkill /F /T /FI "WINDOWTITLE eq Trafik Polisi*" >nul 2>&1
 
 echo ISLEM TAMAM.
 timeout /t 3

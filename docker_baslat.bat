@@ -46,5 +46,4 @@ docker-compose up --build --remove-orphans
 
 echo.
 echo [Docker] Komut sonlandi. Hata varsa yukaridaki mesaja bak.
-echo [Docker] Pencereyi kapatmak icin bir tusa basin.
-pause >nul
+timeout /t 1 >nul

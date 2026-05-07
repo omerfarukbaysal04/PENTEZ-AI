@@ -13,5 +13,4 @@ py traffic_manager.py
 
 echo.
 echo [Trafik] Komut sonlandi. Hata varsa yukaridaki mesaja bak.
-echo [Trafik] Pencereyi kapatmak icin bir tusa basin.
-pause >nul
+timeout /t 1 >nul
