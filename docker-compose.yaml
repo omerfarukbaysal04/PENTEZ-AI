@@ -26,8 +26,8 @@ services:
       IOT_SENSOR_ENABLED: "false"
       IDS_FALSE_ALARM_ENABLED: "false"
       IDS_TIMING_ENABLED: "false"
-      FAKE_VEHICLE_ENABLED: "true"
+      FAKE_VEHICLE_ENABLED: "false"
       V2V_ENABLED: "false"
-      V2I_ENABLED: "false"
+      V2I_ENABLED: "true"
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -25,8 +25,8 @@ SCENARIO_DB = {
             {"id": "T1565", "taktor": "Impact",          "teknik": "Data Manipulation"},
         ],
         "poc": "POST /login HTTP/1.1\nHost: localhost:5000\n\nusername=\' OR \'1\'=\'1&password=\' OR \'1\'=\'1",
-        "etki": "Trafik kontrol sistemine tam yetkiyle erisim, tum kavsak isiklarinin manipulasyonu",
-        "oneri": "Parametreli sorgular (prepared statements) kullanilmali, kullanici girdileri whitelist ile dogrulanmalidir.",
+        "etki": "Trafik kontrol sistemine tam yetkiyle erişim, tüm kavşak ışıklarının manipülasyonu",
+        "oneri": "Parametreli sorgular (prepared statements) kullanılmalı, kullanıcı girdileri whitelist ile doğrulanmalıdır.",
     },
     "ATTACK_RANSOMWARE": {
         "baslik": "SSH Brute Force ile Arac Kontrol Sistemine Fidye Yazilimi Yuklenmesi",
@@ -41,8 +41,8 @@ SCENARIO_DB = {
             {"id": "T1489",     "taktor": "Impact",            "teknik": "Service Stop"},
         ],
         "poc": "$ py main.py -t localhost -m llama3.1:latest\n[RECON] SSH portu acik: localhost:2222\n[BRUTE FORCE] Deneniyor: root:1234\n[SUCCESS] Sifre bulundu: root:1234\n[SSH] /app/DOSYALARINIZ_SIFRELENDI.txt olusturuldu\n[SSH] /app/control.py ENCRYPTED_BY_RANSOMWARE ile degistirildi\n[SSH] pkill -f control.py\n[IMPACT] localhost:444 uzerinden RANSOMWARE komutu gonderildi",
-        "etki": "Zayif SSH parolasi nedeniyle vehicle_controller ele gecirilmis, fidye notu birakilmis, control.py dosyasi sifrelenmis ve SUMO tarafina ransomware etki komutu iletilmistir.",
-        "oneri": "SSH anahtar tabanli kimlik dogrulama zorunlu hale getirilmeli, parola girisi devre disi birakilmali, fail2ban ile brute force korumasi uygulanmalidir.",
+        "etki": "Zayıf SSH parolası nedeniyle vehicle_controller ele geçirilmiş, fidye notu bırakılmış, control.py dosyası şifrelenmiş ve SUMO tarafına ransomware etki komutu iletilmiştir.",
+        "oneri": "SSH anahtar tabanlı kimlik doğrulama zorunlu hale getirilmeli, parola girişi devre dışı bırakılmalı, fail2ban ile brute force koruması uygulanmalıdır.",
     },
     "ATTACK_SPEED_SPOOF": {
         "baslik": "Kimlik Dogrulamasiz Kontrol Soketi Uzerinden Arac Hiz Manipulasyonu",
@@ -55,8 +55,8 @@ SCENARIO_DB = {
             {"id": "T1565.001", "taktor": "Impact",    "teknik": "Stored Data Manipulation"},
         ],
         "poc": "$ nc localhost 444\nSPEED:hedef_arac:0\nOK: Hiz komutu uygulaniyor\nSPEED:hedef_arac:50\nOK: Hiz komutu uygulaniyor",
-        "etki": "Hedef aracin hizinin 0 m/s ile 50 m/s (~180 km/h) arasinda serbestce manipule edilmesi, trafik kazasina yol acma",
-        "oneri": "Kontrol soketine token tabanli kimlik dogrulama eklenmeli, TLS sifrelemesi uygulanmalidir.",
+        "etki": "Hedef aracın hızının 0 m/s ile 50 m/s (~180 km/h) arasında serbestçe manipüle edilmesi, trafik kazasına yol açma",
+        "oneri": "Kontrol soketine token tabanlı kimlik doğrulama eklenmeli, TLS şifrelemesi uygulanmalıdır.",
     },
     "ATTACK_WEBPANEL_LOCKDOWN": {
         "baslik": "Web Panel Uzerinden Arac Yonetim Sistemine Yetkisiz Erisim ve Arac Kilitleme",
@@ -70,12 +70,12 @@ SCENARIO_DB = {
             {"id": "T1499",     "taktor": "Impact",               "teknik": "Endpoint Denial of Service"},
         ],
         "poc": "POST /login -> SQL Injection\nGET /vehicles -> HTTP 200 OK\nPOST /vehicles/lock -> LOCK_VEHICLE komutu iletildi",
-        "etki": "Hedef aracin uzaktan kilitlenmesi, trafik ici ani durus ve carpisme riski",
-        "oneri": "Oturum yonetimi guclendirilmeli, /vehicles endpoint'ine yetkilendirme middleware eklenmeli, SQL injection icin prepared statement kullanilmalidir.",
+        "etki": "Hedef aracın uzaktan kilitlenmesi, trafik içi ani duruş ve çarpışma riski",
+        "oneri": "Oturum yönetimi güçlendirilmeli, /vehicles endpoint'ine yetkilendirme middleware eklenmeli, SQL injection için prepared statement kullanılmalıdır.",
     },
     "ATTACK_FAKE_VEHICLE": {
-        "baslik": "Sahte Arac Enjeksiyonu ile V2X Yol Kilitleme (Sybil Saldirisi)",
-        "zafiyet_adi": "Kimlik Dogrulamasiz V2X Arac Enjeksiyon Soketi (CWE-306 + CWE-290)",
+        "baslik": "Sahte Araç Enjeksiyonu ile V2X Yol Kilitleme (Sybil Saldırısı)",
+        "zafiyet_adi": "Kimlik Doğrulamasız V2X Araç Enjeksiyon Soketi (CWE-306 + CWE-290)",
         "cvss_skor": "8.2",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H",
         "risk_seviyesi": "YUKSEK",
@@ -85,12 +85,12 @@ SCENARIO_DB = {
             {"id": "T1499",     "taktor": "Impact",         "teknik": "Endpoint Denial of Service"},
         ],
         "poc": "$ nc localhost 444\nFAKE_VEHICLE\nOK\n# otoban_sag_1 uzerinde temp_sybil_route olusturuldu\n# sybil_block_* kimlikli 50 sahte arac dusuk araliklarla yola yerlestirildi\n# Sahte araclar 0 m/s hizda gri bariyer gibi konumlandirildi\n# Etki: Gercek araclar icin gecis engellendi ve yol kilitlendi",
-        "etki": "Kimlik dogrulamasi olmayan V2X komuta soketi uzerinden sahte arac kimlikleri uretilerek otoban_sag_1 hattina 50 adet durgun Sybil arac yerlestirilmesi, yolun bariyer gibi kilitlenmesi ve gercek trafik akisini engellemesi",
-        "oneri": "V2X arac kimlikleri PKI tabanli sertifikalarla dogrulanmali, ayni kaynaktan kisa surede uretilen coklu arac kimlikleri oran sinirlamasi ve Sybil tespitiyle engellenmelidir.",
+        "etki": "Kimlik doğrulaması olmayan V2X komuta soketi üzerinden sahte araç kimlikleri üretilerek otoban_sag_1 hattına 50 adet durgun Sybil araç yerleştirilmesi, yolun bariyer gibi kilitlenmesi ve gerçek trafik akışını engellemesi",
+        "oneri": "V2X araç kimlikleri PKI tabanlı sertifikalarla doğrulanmalı, aynı kaynaktan kısa sürede üretilen çoklu araç kimlikleri oran sınırlaması ve Sybil tespiti ile engellenmelidir.",
     },
     "ATTACK_SENSOR_SPOOF": {
-        "baslik": "IoT Sensor API Zehirlenmesi ile Kavsak Faz Manipulasyonu",
-        "zafiyet_adi": "Kimlik Dogrulamasiz IoT Sensor API (CWE-306 + CWE-345)",
+        "baslik": "IoT Sensör API Zehirlenmesi ile Kavşak Faz Manipülasyonu",
+        "zafiyet_adi": "Kimlik Doğrulamasız IoT Sensör API (CWE-306 + CWE-345)",
         "cvss_skor": "8.6",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H",
         "risk_seviyesi": "YUKSEK",
@@ -99,12 +99,12 @@ SCENARIO_DB = {
             {"id": "T1498",     "taktor": "Impact",    "teknik": "Network Denial of Service"},
         ],
         "poc": "$ nc localhost 444\nATTACK_SENSOR_SPOOF\nOK\n# Enjekte edilen sahte sensor verisi:\n# Ana yol: %0 yogunluk raporlandi (False Negative)\n# Yan yol: %98 yogunluk / 120 arac raporlandi (False Positive)\n# Etki: center kavsaginda yan yol yesile alindi, ana arter kirmizida bekletildi ve faz uzun sure donduruldu",
-        "etki": "Kavsak kontrol algoritmasina capraz yonlu sahte sensor verisi enjekte edilerek ana arterin kirmizida bekletilmesi, bos/yan yolun onceliklendirilmesi ve trafik isigi fazinin uzun sure dondurulmesi",
-        "oneri": "IoT sensor verileri HMAC veya dijital imza ile dogrulanmali, birden fazla sensor kaynagi capraz kontrol edilmeli ve tutarsiz yogunluk verileri icin anomali esikleri tanimlanmalidir.",
+        "etki": "Kavşak kontrol algoritmasına çapraz yönlü sahte sensör verisi enjekte edilerek ana arterin kırmızıda bekletilmesi, boş/yan yolun önceliklendirilmesi ve trafik ışığı fazının uzun süre dondurulması",
+        "oneri": "IoT sensör verileri HMAC veya dijital imza ile doğrulanmalı, birden fazla sensör kaynağı çapraz kontrol edilmeli ve tutarsız yoğunluk verileri için anomali eşikleri tanımlanmalıdır.",
     },
     "ATTACK_IDS_SPOOF_STOP": {
-        "baslik": "IDS Yanlis Alarm Uretimi - Sahte Kaza Verisi ile Trafik Durdurma",
-        "zafiyet_adi": "IDS/IPS Atlatma via Sahte Sensor Verisi (CWE-345 + CWE-693)",
+        "baslik": "IDS Yanlış Alarm Üretimi - Sahte Kaza Verisi ile Trafik Durdurma",
+        "zafiyet_adi": "IDS/IPS Atlatma via Sahte Sensör Verisi (CWE-345 + CWE-693)",
         "cvss_skor": "7.5",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H",
         "risk_seviyesi": "YUKSEK",
@@ -113,12 +113,12 @@ SCENARIO_DB = {
             {"id": "T1562.001", "taktor": "Defense Evasion", "teknik": "Impair Defenses: Disable or Modify Tools"},
         ],
         "poc": "$ nc localhost 444\nATTACK_IDS_SPOOF_STOP\nOK\n# Kurban arac secildi ve hiz sensoru 0 km/s olarak zehirlendi\n# IDS ani durus/kaza alarmi uretti\n# Acil arac filosu sahte alarm bolgesine yonlendirildi",
-        "etki": "Tek bir sensor kaynagindan gelen sahte 0 km/s verisiyle IDS sisteminin kaza alarmi uretmesi, acil arac filosunun yanlis bolgeye yonlendirilmesi ve trafik akisini gereksiz yere durdurmasi",
-        "oneri": "IDS sistemleri birden fazla bagimsiz sensor kaynagini capraz dogrulamali, ani durus alarmlarini konum, telemetri ve komsu arac verileriyle iliskilendirmeden kritik aksiyon baslatmamalidir.",
+        "etki": "Tek bir sensör kaynağından gelen sahte 0 km/s verisiyle IDS sisteminin kaza alarmi üretmesi, acil araç filosunun yanlış bölgeye yönlendirilmesi ve trafik akışını gereksiz yere durdurması",
+        "oneri": "IDS sistemleri birden fazla bağımsız sensör kaynağını çapraz doğrulamalı, ani duruş alarmlarını konum, telemetri ve komşu araç verileriyle ilişkilendirmeden kritik aksiyon başlatmamalıdır.",
     },
     "ATTACK_IDS_SPOOF_SPEED": {
-        "baslik": "Isik Zamanlama Sabotaji - Asiri Hiz Verisi ile Kavsak Faz Bozumu",
-        "zafiyet_adi": "Sahte Hiz Sensor Verisi ile Kavsak Faz Manipulasyonu (CWE-345)",
+        "baslik": "Işık Zamanlama Sabotajı - Aşırı Hız Verisi ile Kavşak Faz Bozumu",
+        "zafiyet_adi": "Sahte Hız Sensör Verisi ile Kavşak Faz Manipülasyonu (CWE-345)",
         "cvss_skor": "8.1",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H",
         "risk_seviyesi": "YUKSEK",
@@ -127,12 +127,12 @@ SCENARIO_DB = {
             {"id": "T1499.002", "taktor": "Impact", "teknik": "Service Exhaustion Flood"},
         ],
         "poc": "$ nc localhost 444\nATTACK_IDS_SPOOF_SPEED\nOK\n# IoT hiz sensor agina 150 km/s sahte telemetri basildi\n# Kavsak kontrol algoritmasi asiri hizli sanal araclar algiladi\n# Etki: Trafik isiklari 1 saniyelik gecislerle disko moduna alindi",
-        "etki": "150 km/s sahte hiz telemetrisiyle kavsak kontrol algoritmasinin karar mekanizmasinin bozulmasi, trafik isiklarinin 1 saniyelik hizli faz gecislerine zorlanmasi ve kavsak akisini guvensiz hale getirmesi",
-        "oneri": "Sensor girdilerinde fiziksel olarak mumkun olmayan degerler icin sinir kontrolleri uygulanmali, hiz telemetrisi birden fazla kaynakla dogrulanmali ve outlier tespiti icin istatistiksel filtreler kullanilmalidir.",
+        "etki": "150 km/s sahte hız telemetrisiyle kavşak kontrol algoritmasının karar mekanizmasının bozulması, trafik ışıklarının 1 saniyelik hızlı faz geçişlerine zorlanması ve kavşak akışını güvensiz hale getirmesi",
+        "oneri": "Sensör girdilerinde fiziksel olarak mümkün olmayan değerler için sınır kontrolleri uygulanmalı, hız telemetrisi birden fazla kaynakla doğrulanmalı ve outlier tespiti için istatistiksel filtreler kullanılmalıdır.",
     },
     "ATTACK_V2X_V2V": {
-        "baslik": "V2V Sybil Saldirisi - Sahte Acil Fren Sinyali ile Zincirleme Kaza",
-        "zafiyet_adi": "V2V Haberlesme Kimlik Sahteciligi (CWE-290 + CWE-345)",
+        "baslik": "V2V Yanlış Bilgi Yayılımı (Şok Dalgası) — Sahte Acil Fren Sinyali ile Zincirleme Kaza",
+        "zafiyet_adi": "V2V Haberleşme Kimlik Sahteciliği (CWE-290 + CWE-345)",
         "cvss_skor": "9.3",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H",
         "risk_seviyesi": "KRITIK",
@@ -142,13 +142,13 @@ SCENARIO_DB = {
             {"id": "T1499",     "taktor": "Impact",            "teknik": "Endpoint Denial of Service"},
             {"id": "T1557",     "taktor": "Credential Access", "teknik": "Adversary-in-the-Middle"},
         ],
-        "poc": "$ nc localhost 444\nATTACK_V2X_V2V\n# 1. hedef_arac V2X anteni ele gecirildi\n# 2. Zombi arac 50m yaricapindaki tum araclara\n#    sahte Acil Fren sinyali yayinladi\n# 3. Komsu araclar panik freni yaparak zincirleme\n#    kazaya neden oldu",
-        "etki": "Hedef aracin V2X anteninin ele gecirilerek cevredeki tum otonom araclara sahte acil fren sinyali yayilmasi ve zincirleme trafik kazasina yol acilmasi",
-        "oneri": "V2V mesajlari ETSI ITS-G5 veya IEEE 802.11p standartlarina uygun PKI altyapiyla imzalanmali, arac sertifikalari CRL ile dogrulanmalidir.",
+        "poc": "$ nc localhost 444\nATTACK_V2X_V2V\n# 1. hedef_arac V2X anteni ele geçirildi\n# 2. Zombi araç 50m yarıçapındaki tüm araçlara\n#    sahte Acil Fren sinyali yayınladı\n# 3. Komşu araçlar panik freni yaparak zincirleme\n#    kazaya neden oldu",
+        "etki": "Hedef aracın V2X anteninin ele geçirilerek çevresindeki tüm otonom araçlara sahte acil fren sinyali yayılması ve zincirleme trafik kazasına yol açılması",
+        "oneri": "V2V mesajları ETSI ITS-G5 veya IEEE 802.11p standartlarına uygun PKI altyapısıyla imzalanmalı, araç sertifikaları CRL ile doğrulanmalıdır.",
     },
     "ATTACK_V2X_V2I": {
-        "baslik": "V2I Altyapi Zehirlenmesi - Sahte OBU Verisiyle Akilli Kavsak Kilitleme",
-        "zafiyet_adi": "V2I Altyapi Protokolunde Kimlik Dogrulamasi Eksikligi (CWE-306 + CWE-290)",
+        "baslik": "V2I Altyapı Zehirlenmesi - Sahte OBU Verisiyle Akıllı Kavşak Kilitleme",
+        "zafiyet_adi": "V2I Altyapı Protokolünde Kimlik Doğrulaması Eksikliği (CWE-306 + CWE-290)",
         "cvss_skor": "9.1",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H",
         "risk_seviyesi": "KRITIK",
@@ -157,9 +157,9 @@ SCENARIO_DB = {
             {"id": "T1565.002", "taktor": "Impact",         "teknik": "Transmitted Data Manipulation"},
             {"id": "T1498",     "taktor": "Impact",         "teknik": "Network Denial of Service"},
         ],
-        "poc": "$ nc localhost 444\nATTACK_V2X_V2I\n# 1. Arac ici unite (OBU) ele gecirildi\n# 2. Kavsak RSU'suna sahte Acil Durum / Yuksek Hiz verisi gonderildi\n# 3. Akilli kavsak sahte veriye guvenerek kilitlendi",
-        "etki": "Arac ici unitenin (OBU) ele gecirilerek kavsak RSU'suna sahte acil durum verisi iletilmesi ve akilli kavsak sisteminin kilitlenmesi",
-        "oneri": "V2I altyapisinda RSU'lar yalnizca sertifikali OBU'lardan gelen imzali mesajlari kabul etmeli, anormallik tespiti icin davranissal analiz uygulanmalidir.",
+        "poc": "$ nc localhost 444\nATTACK_V2X_V2I\n# 1. Araç içi ünite (OBU) ele geçirildi\n# 2. Kavşak RSU'suna sahte Acil Durum / Yüksek Hız verisi gönderildi\n# 3. Akıllı kavşak sahte veriye güvenerek kilitlendi",
+        "etki": "Araç içi ünitenin (OBU) ele geçirilerek kavşak RSU'suna sahte acil durum verisi iletilmesi ve akıllı kavşak sisteminin kilitlenmesi",
+        "oneri": "V2I altyapısında RSU'lar yalnızca sertifikalı OBU'lardan gelen imzalı mesajları kabul etmeli, anormallik tespiti için davranışsal analiz uygulanmalıdır.",
     },
 }
 # Bilinmeyen senaryo için varsayılan
@@ -303,38 +303,61 @@ class ReportingAgent:
             return f"[LLM bağlantı hatası: {e}]"
 
     def _giris_ozeti(self, scenario_data, logs):
-        prompt = f"""Sen kıdemli bir siber güvenlik analistisin. Aşağıdaki V2X sızma testi için 3-4 cümlelik Türkçe, akademik ve resmi bir GİRİŞ paragrafı yaz. 
-PENTEZ-AI'ın ne olduğunu, V2X haberleşmesinin önemini ve bu testin amacını belirt. 
+        prompt = f"""Sen kıdemli bir siber güvenlik analistisin. Aşağıdaki sızma testi için 3-4 cümlelik Türkçe, akademik ve resmi bir GİRİŞ paragrafı yaz.
+PENTEZ-AI, akıllı şehir trafik altyapısına yönelik geliştirilen otonom bir sızma testi aracıdır — V2X bileşeni DEĞİLDİR.
+Paragrafta şunları belirt: PENTEZ-AI'ın ne olduğu, test edilen sistemin (V2X trafik altyapısı) önemi, bu testin amacı.
 Senaryo: {scenario_data['baslik']}
 Sadece paragraf metnini yaz, başlık veya ek açıklama ekleme."""
         return self._llm_yorum(prompt, 300)
 
     def _yonetici_ozeti(self, scenario_data, logs, durum):
         log_str = "\n".join(logs[-10:]) if logs else "Log verisi yok"
-        prompt = f"""Sen kıdemli bir siber güvenlik analistisin. Aşağıdaki sızma testi için teknik olmayan bir dille 4-5 cümlelik Türkçe YÖNETİCİ ÖZETİ yaz.
-Saldırı nasıl gerçekleşti, trafik ve can güvenliğine etkisi ne oldu, sonuç ne oldu - bunları özetle.
+        prompt = f"""Sen kıdemli bir siber güvenlik analistisin ve bu raporu savunma tarafı olarak yazıyorsun.
+Aşağıdaki sızma testi için teknik olmayan bir dille 4-5 cümlelik Türkçe YÖNETİCİ ÖZETİ yaz.
+
+ZORUNLU KURALLAR:
+- Üçüncü şahıs kullan: "saldırı gerçekleştirildi", "sistem ele geçirildi", "zafiyet tespit edildi"
+- "Saldırmış bulunmaktayız", "gerçekleştirdik" gibi birinci şahıs ifadesi YASAK
+- Kavşak kilitlenmesi ve sahte veri enjeksiyonu trafik güvenliğini OLUMSUZ etkiler — bunu açıkça belirt
+- Saldırının başarılı olduğunu ve bunun ciddi bir güvenlik riski oluşturduğunu vurgula
+
 Senaryo: {scenario_data['baslik']}
+Etki: {scenario_data['etki']}
 Nihai Durum: {durum}
 Loglar: {log_str}
-Sadece paragraf metnini yaz."""
+Sadece paragraf metnini yaz, başlık ekleme."""
         return self._llm_yorum(prompt, 400)
 
     def _zafiyet_detay(self, scenario_data, logs):
         log_str = "\n".join(logs) if logs else "Log verisi yok"
-        prompt = f"""Aşağıdaki zafiyet için 3-4 cümlelik Türkçe teknik AÇIKLAMA yaz. 
-Zafiyetin neden oluştuğunu, nasıl istismar edildiğini ve sistemdeki köken nedenini belirt.
+        prompt = f"""Sen kıdemli bir siber güvenlik analistisin.
+Aşağıdaki zafiyet için 3-4 cümlelik Türkçe teknik AÇIKLAMA yaz.
+
+ZORUNLU KURALLAR:
+- Zafiyet adını veya başlığını tekrar yazma — sadece açıklama metni yaz
+- Zafiyetin KÖK NEDENİNİ (neden oluştu), NASIL İSTİSMAR EDİLDİĞİNİ ve SİSTEME ETKİSİNİ belirt
+- Akademik ve teknik dil kullan
+
 Zafiyet: {scenario_data['zafiyet_adi']}
 Senaryo: {scenario_data['baslik']}
 Log Kanıtları: {log_str}
-Sadece açıklama metnini yaz, başlık ekleme."""
+Sadece açıklama metnini yaz, başlık veya zafiyet adını ekleme."""
         return self._llm_yorum(prompt, 350)
 
     def _sonuc(self, scenario_data, durum):
-        prompt = f"""Aşağıdaki V2X sızma testi için 3-4 cümlelik Türkçe, resmi ve akademik bir SONUÇ paragrafı yaz.
-Testin önemini, bulunan zafiyetin kritikliğini ve alınması gereken önlemlerin aciliyetini vurgula.
+        prompt = f"""Sen kıdemli bir siber güvenlik analistisin.
+Aşağıdaki sızma testi için 3-4 cümlelik Türkçe, resmi ve akademik bir SONUÇ paragrafı yaz.
+
+ZORUNLU KURALLAR:
+- Başlık veya liste YAZMA — sadece paragraf metni yaz
+- "kaçınılmaz hale geliyor", "ortaya koyuyor" gibi gayri resmi ifadeler YASAK
+- Geniş zaman değil geçmiş zaman: "edildi", "tespit edilmiştir", "gösterilmiştir"
+- Testin önemini, zafiyetin kritikliğini ve önlem alınması gerekliliğini vurgula
+- Üçüncü şahıs, akademik üslup
+
 Senaryo: {scenario_data['baslik']}
 Nihai Durum: {durum}
-Sadece sonuç metnini yaz."""
+Sadece sonuç paragrafını yaz."""
         return self._llm_yorum(prompt, 300)
 
     def generate_report(self, blackboard):
@@ -470,7 +493,7 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
 
 ---
 
-## 8. MITRE ATT&CK Özeti
+## 8. MITRE ATT&#38;CK Özeti
 
 | Teknik ID | Taktik | Teknik Adı |
 |-----------|--------|------------|
@@ -706,7 +729,13 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
 
             # Başlıklar
             if line.startswith("## "):
-                story.append(Paragraph(line[3:], s_h1))
+                heading_text = line[3:]
+                # ATT&CK içeren başlıklarda & işaretini koru, diğerlerini escape et
+                if "ATT&#38;CK" in heading_text or "ATT&CK" in heading_text:
+                    heading_text = heading_text.replace("ATT&#38;CK", "ATT&amp;CK")
+                else:
+                    heading_text = escape_pdf_text(heading_text)
+                story.append(Paragraph(heading_text, s_h1))
             elif line.startswith("### "):
                 story.append(Paragraph(line[4:], s_h2))
             elif line.startswith("# "):
@@ -747,4 +776,3 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
         doc.build(story)
         print(f"✅ [RAPORLAMA] PDF raporu oluşturuldu: {pdf_path}")
         return pdf_path
-
