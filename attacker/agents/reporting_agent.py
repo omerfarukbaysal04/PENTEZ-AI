@@ -24,7 +24,7 @@ SCENARIO_DB = {
             {"id": "T1565", "taktor": "Impact",          "teknik": "Data Manipulation"},
         ],
         "poc": "POST /login HTTP/1.1\nHost: localhost:5000\n\nusername=\' OR \'1\'=\'1&password=\' OR \'1\'=\'1",
-        "etki": "Trafik kontrol sistemine tam yetkiyle erisim, tum kavsak isiklainin manipulasyonu",
+        "etki": "Trafik kontrol sistemine tam yetkiyle erisim, tum kavsak isiklarinin manipulasyonu",
         "oneri": "Parametreli sorgular (prepared statements) kullanilmali, kullanici girdileri whitelist ile dogrulanmalidir.",
     },
     "ATTACK_RANSOMWARE": {
@@ -39,8 +39,8 @@ SCENARIO_DB = {
             {"id": "T1486",     "taktor": "Impact",            "teknik": "Data Encrypted for Impact"},
             {"id": "T1489",     "taktor": "Impact",            "teknik": "Service Stop"},
         ],
-        "poc": "$ hydra -l root -P wordlist.txt ssh://localhost:2222\n[22][ssh] host: localhost  login: root  password: 1234\n$ ssh root@localhost -p 2222\n# echo ENCRYPTED > /app/control.py && pkill -f control.py",
-        "etki": "Arac kontrol dosyalarinin sifrelenmesi, arac kontrol surecinin sonlandirilmasi, tum araclarin durdurulmasi ve kavsaklarin kilitlenmesi",
+        "poc": "$ py main.py -t localhost -m llama3.1:latest\n[RECON] SSH portu acik: localhost:2222\n[BRUTE FORCE] Deneniyor: root:1234\n[SUCCESS] Sifre bulundu: root:1234\n[SSH] /app/DOSYALARINIZ_SIFRELENDI.txt olusturuldu\n[SSH] /app/control.py ENCRYPTED_BY_RANSOMWARE ile degistirildi\n[SSH] pkill -f control.py\n[IMPACT] localhost:444 uzerinden RANSOMWARE komutu gonderildi",
+        "etki": "Zayif SSH parolasi nedeniyle vehicle_controller ele gecirilmis, fidye notu birakilmis, control.py dosyasi sifrelenmis ve SUMO tarafina ransomware etki komutu iletilmistir.",
         "oneri": "SSH anahtar tabanli kimlik dogrulama zorunlu hale getirilmeli, parola girisi devre disi birakilmali, fail2ban ile brute force korumasi uygulanmalidir.",
     },
     "ATTACK_SPEED_SPOOF": {
@@ -126,7 +126,7 @@ SCENARIO_DB = {
             {"id": "T1499.002", "taktor": "Impact", "teknik": "Service Exhaustion Flood"},
         ],
         "poc": "$ nc localhost 444\nATTACK_IDS_SPOOF_SPEED\n# Tum araclara hiz=150 km/s sahte verisi\n# Etki: Kavsak algoritmasi coktu, isiklar 1 sn'de bir degisti (disko modu)",
-        "etki": "150 km/s sahte hiz verisiyle kavsak kontrolorunun cokmesi, trafik isiklainin kontrolsuz yanip sonmesi",
+        "etki": "150 km/s sahte hiz verisiyle kavsak kontrolorunun cokmesi, trafik isiklarinin kontrolsuz yanip sonmesi",
         "oneri": "Sensor girdilerinde fiziksel olarak mumkun olmayan degerler icin sinir kontrolleri uygulanmali, outlier tespiti icin istatistiksel filtreler kullanilmalidir.",
     },
     "ATTACK_V2X_V2V": {
@@ -175,6 +175,88 @@ DEFAULT_SCENARIO = {
     "etki": "Sistem güvenliğinin ihlali",
     "oneri": "İlgili güvenlik yamaları uygulanmalıdır.",
 }
+
+
+def normalize_risk(risk):
+    value = (risk or "").upper()
+    value = value.replace("İ", "I").replace("Ü", "U").replace("Ş", "S")
+    value = value.replace("Ğ", "G").replace("Ö", "O").replace("Ç", "C")
+    return value
+
+
+def display_risk(risk):
+    labels = {
+        "KRITIK": "KRITIK",
+        "YUKSEK": "YUKSEK",
+        "ORTA": "ORTA",
+        "DUSUK": "DUSUK",
+    }
+    return labels.get(normalize_risk(risk), risk or "BILINMIYOR")
+
+
+def cwe_from_vulnerability_name(name):
+    import re
+    matches = re.findall(r"CWE-\d+", name or "")
+    return ", ".join(matches) if matches else "N/A"
+
+
+def format_test_logs(logs):
+    if not logs:
+        return "- *Log kaydi bulunamadi*"
+
+    cleaned = []
+    seen = set()
+    for log in logs:
+        if not log:
+            continue
+        line = str(log).strip()
+        if "UPDATE: 'logs' guncellendi" in line:
+            continue
+        if line in seen:
+            continue
+        seen.add(line)
+        cleaned.append(line)
+
+    def sort_key(line):
+        import re
+        match = re.search(r"\[(\d{2}):(\d{2}):(\d{2})\]", line)
+        if not match:
+            return (99, 99, 99, line)
+        return tuple(int(part) for part in match.groups()) + (line,)
+
+    cleaned.sort(key=sort_key)
+
+    important = []
+    for line in cleaned:
+        if (
+            "target_ip" in line
+            or "open_ports" in line
+            or "vulnerabilities" in line
+            or "selected_scenario" in line
+            or "mission_status" in line
+            or "SYSTEM_COMPROMISED" in line
+            or "ATTACK_BLOCKED" in line
+            or line.startswith("SQL")
+            or line.startswith("SPEED")
+            or line.startswith("SENSOR")
+            or line.startswith("IDS")
+            or line.startswith("V2X")
+        ):
+            important.append(line)
+
+    if not important:
+        important = cleaned
+
+    return "\n".join(f"- `{line}`" for line in important)
+
+
+def escape_pdf_text(text):
+    return (
+        str(text)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
 
 
 class ReportingAgent:
@@ -251,8 +333,9 @@ Sadece sonuç metnini yaz."""
         detay   = self._zafiyet_detay(sc, logs)
         sonuc   = self._sonuc(sc, durum)
 
-        # Risk seviyesine göre sembol
-        risk_icon = {"KRİTİK": "🔴", "YÜKSEK": "🟠", "ORTA": "🟡", "DÜŞÜK": "🟢"}.get(sc["risk_seviyesi"], "⚪")
+        risk_key = normalize_risk(sc["risk_seviyesi"])
+        risk_label = display_risk(sc["risk_seviyesi"])
+        risk_badge = f"[{risk_label}]"
 
         # MITRE tablosu
         mitre_tablo = "\n".join([
@@ -261,7 +344,7 @@ Sadece sonuç metnini yaz."""
         ])
 
         # Log tablosu
-        log_listesi = "\n".join([f"- `{l}`" for l in logs]) if logs else "- *Log kaydı bulunamadı*"
+        log_listesi = format_test_logs(logs)
 
         md = f"""# PENTEZ-AI Sızma Testi Raporu
 
@@ -323,24 +406,24 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
 
 | Seviye | Adet |
 |--------|------|
-| 🔴 Kritik | {1 if sc['risk_seviyesi'] == 'KRİTİK' else 0} |
-| 🟠 Yüksek | {1 if sc['risk_seviyesi'] == 'YÜKSEK' else 0} |
-| 🟡 Orta | 0 |
-| 🟢 Düşük | 0 |
+| Kritik | {1 if risk_key == 'KRITIK' else 0} |
+| Yüksek | {1 if risk_key == 'YUKSEK' else 0} |
+| Orta | {1 if risk_key == 'ORTA' else 0} |
+| Düşük | {1 if risk_key == 'DUSUK' else 0} |
 | **Toplam** | **1** |
 
 ---
 
 ## 6. Zafiyetler ve Detaylı Analiz
 
-### {risk_icon} Z-01 — {sc['zafiyet_adi']}
+### {risk_badge} Z-01 — {sc['zafiyet_adi']}
 
 | Alan | Değer |
 |------|-------|
-| Risk Seviyesi | **{sc['risk_seviyesi']}** |
+| Risk Seviyesi | **{risk_label}** |
 | CVSS v3.1 Skoru | **{sc['cvss_skor']} / 10.0** |
 | CVSS Vektörü | `{sc['cvss_vektor']}` |
-| CWE | `{sc['zafiyet_adi'].split("(")[-1].replace(")", "") if "CWE" in sc['zafiyet_adi'] else "N/A"}` |
+| CWE | `{cwe_from_vulnerability_name(sc['zafiyet_adi'])}` |
 
 **Açıklama:**
 
@@ -524,7 +607,7 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
             for ri, row in enumerate(rows):
                 para_row = []
                 for ci, cell in enumerate(row):
-                    txt = str(cell).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                    txt = escape_pdf_text(cell)
                     style = s_cell_bold if (ri == 0 and header) else s_cell
                     para_row.append(Paragraph(txt, style))
                 para_rows.append(para_row)
@@ -547,7 +630,7 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
         story.append(Spacer(1, 1*cm))
         story.append(Paragraph("PENTEZ-AI", ParagraphStyle("cover_dj", fontName=FONT_BOLD,
                                 fontSize=28, textColor=RED, alignment=TA_CENTER)))
-        story.append(Paragraph("Sizmaaa Testi Raporu", ParagraphStyle("cover2_dj", fontName=FONT_NORMAL,
+        story.append(Paragraph("Sızma Testi Raporu", ParagraphStyle("cover2_dj", fontName=FONT_NORMAL,
                                 fontSize=18, textColor=DARK, alignment=TA_CENTER)))
         story.append(HRFlowable(width="100%", thickness=2, color=RED, spaceAfter=10))
         story.append(Spacer(1, 0.5*cm))
@@ -608,19 +691,16 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
                 story.append(HRFlowable(width="100%", thickness=0.5,
                                         color=colors.HexColor("#cccccc"), spaceBefore=4, spaceAfter=4))
             elif line.startswith("- ") or line.startswith("* "):
-                txt = line[2:].replace("`", "").replace("**", "")
-                story.append(Paragraph(f"• {txt}", s_body))
+                txt = escape_pdf_text(line[2:].replace("`", "").replace("**", ""))
+                story.append(Paragraph(f"- {txt}", s_body))
             elif line.strip().startswith("**") and line.strip().endswith("**"):
                 story.append(Paragraph(f"<b>{line.strip()[2:-2]}</b>", s_body))
             elif line.strip():
-                clean = (line.strip()
-                         .replace("&", "&amp;")
-                         .replace("<", "&lt;")
-                         .replace(">", "&gt;"))
+                clean = escape_pdf_text(line.strip())
                 # Bold
                 import re
                 clean = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', clean)
-                clean = re.sub(r'`(.+?)`', r'<font name="Courier" size="9">\1</font>', clean)
+                clean = re.sub(r'`(.+?)`', rf'<font name="{FONT_MONO}" size="9">\1</font>', clean)
                 story.append(Paragraph(clean, s_body))
             else:
                 story.append(Spacer(1, 4))
@@ -635,7 +715,7 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
         story.append(Spacer(1, 1*cm))
         story.append(HRFlowable(width="100%", thickness=1, color=RED))
         story.append(Paragraph(
-            f"PENTEZ-AI Otomatik Sızma Testi Raporu — {datetime.now().strftime('%Y-%m-%d')} — GİZLİ",
+            f"PENTEZ-AI Otomatik Sızma Testi Raporu - {datetime.now().strftime('%Y-%m-%d')} - GİZLİ",
             s_footer
         ))
 

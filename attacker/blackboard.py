@@ -19,7 +19,11 @@ class Blackboard:
 
     def update_key(self, key, value):
         if key in self.state:
-            if isinstance(self.state[key], list) and isinstance(value, list):
+            if key == "logs" and isinstance(value, list):
+                for item in value:
+                    if item not in self.state[key]:
+                        self.state[key].append(item)
+            elif isinstance(self.state[key], list) and isinstance(value, list):
                 current_set = set(self.state[key])
                 new_set     = set(value)
                 self.state[key] = list(current_set.union(new_set))

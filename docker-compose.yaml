@@ -8,7 +8,7 @@ services:
     volumes:
       - ./web_panel:/app
     environment:
-      SQL_INJECTION_ENABLED: "true"
+      SQL_INJECTION_ENABLED: "false"
       WEBPANEL_LOCK_ENABLED: "false"
       RANSOMWARE_ENABLED:    "true"    # Ransomware zafiyeti
     extra_hosts:
@@ -22,7 +22,7 @@ services:
     container_name: vehicle_controller
     environment:
       SSH_ENABLED: "false"
-      SPEED_SPOOF_ENABLED: "false"
+      SPEED_SPOOF_ENABLED: "true"
       IOT_SENSOR_ENABLED: "false"
       IDS_FALSE_ALARM_ENABLED: "false"
       IDS_TIMING_ENABLED: "false"

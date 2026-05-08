@@ -63,13 +63,19 @@ echo KAPATILIYOR...
 echo [-] SUMO ve Python Yoneticisi kapatiliyor...
 taskkill /F /IM sumo-gui.exe /T >nul 2>&1
 taskkill /F /IM python.exe /T >nul 2>&1
+taskkill /F /IM py.exe /T >nul 2>&1
 
 echo [-] Docker temizleniyor...
 docker-compose down
+taskkill /F /IM docker-compose.exe /T >nul 2>&1
+taskkill /F /IM docker.exe /T >nul 2>&1
 
 echo [-] Yardimci CMD pencereleri kapatiliyor...
 taskkill /F /T /FI "WINDOWTITLE eq Hacker Paneli*" >nul 2>&1
 taskkill /F /T /FI "WINDOWTITLE eq Trafik Polisi*" >nul 2>&1
+taskkill /F /T /FI "WINDOWTITLE eq *Hacker Paneli*" >nul 2>&1
+taskkill /F /T /FI "WINDOWTITLE eq *Trafik Polisi*" >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'cmd.exe' -and ($_.CommandLine -like '*docker_baslat.bat*' -or $_.CommandLine -like '*trafik_baslat.bat*') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
 
 echo ISLEM TAMAM.
 timeout /t 3

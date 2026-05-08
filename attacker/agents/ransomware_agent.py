@@ -143,13 +143,38 @@ class RansomwareAgent:
         try:
             sock = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
             sock.settimeout(3)
-            sock.connect(("localhost", 9999))
+            sock.connect(("localhost", 444))
             sock.sendall(b"RANSOMWARE")
-            sock.recv(1024)
+            response = sock.recv(1024).decode("utf-8", errors="ignore").strip()
             sock.close()
+            if response.upper().startswith("BLOCKED"):
+                print(f"🛡️  [RANSOMWARE] SUMO bildirimi engellendi: {response}")
+                return False
             print("🟣 [RANSOMWARE] SUMO bildirildi — araçlar kilitlendi, ışıklar kırmızıya alındı.")
+            return True
         except Exception as e:
             print(f"⚠️  [RANSOMWARE] SUMO bildirimi başarısız (traffic_manager çalışıyor mu?): {e}")
+            return False
+
+    def drop_local_evidence_note(self):
+        """Container icindeki fidye notuna ek olarak host tarafinda kanit dosyasi birak."""
+        import os
+        candidates = [
+            os.path.abspath(os.path.join(os.getcwd(), "DOSYALARINIZ_SIFRELENDI.txt")),
+            os.path.abspath(os.path.join(os.getcwd(), "..", "DOSYALARINIZ_SIFRELENDI.txt")),
+        ]
+
+        for path in candidates:
+            try:
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(RANSOM_NOTE)
+                print(f"📄 [RANSOMWARE] Host kanıt fidye notu oluşturuldu: {path}")
+                return path
+            except Exception:
+                continue
+
+        print("⚠️  [RANSOMWARE] Host tarafında fidye notu oluşturulamadı.")
+        return None
 
     def run(self, blackboard):
         print("\n" + "=" * 60)
@@ -176,13 +201,21 @@ class RansomwareAgent:
 
         if success:
             # SUMO'ya da bildir — araçlar mor olsun, ışıklar kırmızıya dönsün
-            self.notify_traffic_manager()
+            sumo_notified = self.notify_traffic_manager()
+            note_path = self.drop_local_evidence_note()
 
             print("\n" + "=" * 60)
             print("💀 [RANSOMWARE] SALDIRI TAMAMLANDI!")
             print(RANSOM_NOTE)
             print("=" * 60)
-            blackboard.update_key("logs", ["RANSOMWARE_DEPLOYED: vehicle_controller ele gecirildi."])
+            logs = ["RANSOMWARE_DEPLOYED: vehicle_controller ele gecirildi."]
+            if sumo_notified:
+                logs.append("RANSOMWARE_IMPACT: SUMO araclari kilitlendi ve kavsaklar kirmiziya alindi.")
+            else:
+                logs.append("RANSOMWARE_WARNING: SUMO bildirimi basarisiz.")
+            if note_path:
+                logs.append(f"RANSOMWARE_NOTE: {note_path}")
+            blackboard.update_key("logs", logs)
             blackboard.update_key("mission_status", "SUCCESS")
         else:
             blackboard.update_key("mission_status", "FAIL")

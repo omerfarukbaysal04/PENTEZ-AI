@@ -92,8 +92,6 @@ def command_block_reason(command, flags):
         return "V2V Saldirisi"
     if command == "ATTACK_V2X_V2I" and not flags["v2i"]:
         return "V2I Saldirisi"
-    if command in ("HACK_VEHICLE", "LOCK_VEHICLE") and not flags["webpanel_lock"]:
-        return "Web Panel Lockdown"
     if command == "RANSOMWARE" and not flags["ransomware"]:
         return "Ransomware"
     return None
@@ -248,6 +246,19 @@ def spawn_emergency_fleet(victim_veh=None):
             
     except Exception as e:
         print(f"❌ [IDS] Acil Durum Filosu spawn hatası: {e}")
+
+
+def focus_camera_on_vehicle(veh_id, zoom=1800):
+    try:
+        if veh_id not in traci.vehicle.getIDList():
+            return
+        x, y = traci.vehicle.getPosition(veh_id)
+        traci.gui.setOffset("View #0", x, y)
+        traci.gui.trackVehicle("View #0", veh_id)
+        traci.gui.setZoom("View #0", zoom)
+        print(f">>> [KAMERA] {veh_id} takip ediliyor (zoom={zoom}).")
+    except Exception as e:
+        print(f">>> [KAMERA] Odaklama hatası: {e}")
 
 def run_simulation():
     t = threading.Thread(target=start_socket_server)
@@ -654,12 +665,15 @@ def run_simulation():
                         spd   = float(parts[2])
                         vehicle_ids = traci.vehicle.getIDList()
                         if vid in vehicle_ids:
+                            focus_camera_on_vehicle(vid, zoom=2200)
                             traci.vehicle.setSpeed(vid, spd)
                             color = (255, 0, 0, 255) if spd == 0 else (255, 165, 0, 255)
                             traci.vehicle.setColor(vid, color)
                             print(f">>> [SPEED] {vid} -> {spd} m/s")
                         elif vehicle_ids:
                             vid = vehicle_ids[0]
+                            print(f">>> [SPEED] hedef_arac sahada değil; {vid} hedef alınıyor.")
+                            focus_camera_on_vehicle(vid, zoom=2200)
                             traci.vehicle.setSpeed(vid, spd)
                             color = (255, 0, 0, 255) if spd == 0 else (255, 165, 0, 255)
                             traci.vehicle.setColor(vid, color)
