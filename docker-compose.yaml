@@ -22,11 +22,11 @@ services:
     container_name: vehicle_controller
     environment:
       SSH_ENABLED: "false"
-      SPEED_SPOOF_ENABLED: "true"
+      SPEED_SPOOF_ENABLED: "false"
       IOT_SENSOR_ENABLED: "false"
       IDS_FALSE_ALARM_ENABLED: "false"
       IDS_TIMING_ENABLED: "false"
-      FAKE_VEHICLE_ENABLED: "false"
+      FAKE_VEHICLE_ENABLED: "true"
       V2V_ENABLED: "false"
       V2I_ENABLED: "false"
     extra_hosts:

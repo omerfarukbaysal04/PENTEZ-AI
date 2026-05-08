@@ -1,7 +1,8 @@
-import requests
+﻿import requests
 import json
 from datetime import datetime
 import os
+import re
 
 import platform
 if platform.system() == "Windows":
@@ -73,7 +74,7 @@ SCENARIO_DB = {
         "oneri": "Oturum yonetimi guclendirilmeli, /vehicles endpoint'ine yetkilendirme middleware eklenmeli, SQL injection icin prepared statement kullanilmalidir.",
     },
     "ATTACK_FAKE_VEHICLE": {
-        "baslik": "Sahte Arac Enjeksiyonu ile V2X Trafik Manipulasyonu (Sybil Saldirisi)",
+        "baslik": "Sahte Arac Enjeksiyonu ile V2X Yol Kilitleme (Sybil Saldirisi)",
         "zafiyet_adi": "Kimlik Dogrulamasiz V2X Arac Enjeksiyon Soketi (CWE-306 + CWE-290)",
         "cvss_skor": "8.2",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H",
@@ -83,12 +84,12 @@ SCENARIO_DB = {
             {"id": "T1565.002", "taktor": "Impact",         "teknik": "Transmitted Data Manipulation"},
             {"id": "T1499",     "taktor": "Impact",         "teknik": "Endpoint Denial of Service"},
         ],
-        "poc": "$ nc localhost 444\nFAKE_VEHICLE\nOK: Sahte arac enjekte edildi\n# 5 sahte arac simulasyona eklendi\n# Trafik yogunlugu yapay olarak artirildi",
-        "etki": "Simulasyona sahte arac enjekte edilerek trafik yogunlugunun yapay artirilmasi ve kavsak algoritmalarinin yaniltilmasi",
-        "oneri": "V2X arac kimlik dogrulamasi icin PKI tabanli sertifika altyapisi kurulmali, arac kimlikleri kriptografik olarak dogrulanmalidir.",
+        "poc": "$ nc localhost 444\nFAKE_VEHICLE\nOK\n# otoban_sag_1 uzerinde temp_sybil_route olusturuldu\n# sybil_block_* kimlikli 50 sahte arac dusuk araliklarla yola yerlestirildi\n# Sahte araclar 0 m/s hizda gri bariyer gibi konumlandirildi\n# Etki: Gercek araclar icin gecis engellendi ve yol kilitlendi",
+        "etki": "Kimlik dogrulamasi olmayan V2X komuta soketi uzerinden sahte arac kimlikleri uretilerek otoban_sag_1 hattina 50 adet durgun Sybil arac yerlestirilmesi, yolun bariyer gibi kilitlenmesi ve gercek trafik akisini engellemesi",
+        "oneri": "V2X arac kimlikleri PKI tabanli sertifikalarla dogrulanmali, ayni kaynaktan kisa surede uretilen coklu arac kimlikleri oran sinirlamasi ve Sybil tespitiyle engellenmelidir.",
     },
     "ATTACK_SENSOR_SPOOF": {
-        "baslik": "IoT Sensor API Zehirlenmesi ile Kavsak Algoritmasi Manipulasyonu",
+        "baslik": "IoT Sensor API Zehirlenmesi ile Kavsak Faz Manipulasyonu",
         "zafiyet_adi": "Kimlik Dogrulamasiz IoT Sensor API (CWE-306 + CWE-345)",
         "cvss_skor": "8.6",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H",
@@ -97,9 +98,9 @@ SCENARIO_DB = {
             {"id": "T1565.002", "taktor": "Impact",    "teknik": "Transmitted Data Manipulation"},
             {"id": "T1498",     "taktor": "Impact",    "teknik": "Network Denial of Service"},
         ],
-        "poc": "$ nc localhost 444\nATTACK_SENSOR_SPOOF\n# Enjekte edilen sahte sensor verisi:\n# vehicle_count: 999, speed: 0\n# Etki: Kavsak tum yonlerden asiri arac geldigini sanarak kilitlendi",
-        "etki": "Kavsak kontrol algoritmasina capraz yonlu sahte arac verisi enjekte edilerek tum sinyalizasyonun kilitlenmesi ve trafik felci",
-        "oneri": "IoT sensor verileri HMAC veya dijital imza ile dogrulanmali, anomali tespiti icin esik degerleri tanimlanmalidir.",
+        "poc": "$ nc localhost 444\nATTACK_SENSOR_SPOOF\nOK\n# Enjekte edilen sahte sensor verisi:\n# Ana yol: %0 yogunluk raporlandi (False Negative)\n# Yan yol: %98 yogunluk / 120 arac raporlandi (False Positive)\n# Etki: center kavsaginda yan yol yesile alindi, ana arter kirmizida bekletildi ve faz uzun sure donduruldu",
+        "etki": "Kavsak kontrol algoritmasina capraz yonlu sahte sensor verisi enjekte edilerek ana arterin kirmizida bekletilmesi, bos/yan yolun onceliklendirilmesi ve trafik isigi fazinin uzun sure dondurulmesi",
+        "oneri": "IoT sensor verileri HMAC veya dijital imza ile dogrulanmali, birden fazla sensor kaynagi capraz kontrol edilmeli ve tutarsiz yogunluk verileri icin anomali esikleri tanimlanmalidir.",
     },
     "ATTACK_IDS_SPOOF_STOP": {
         "baslik": "IDS Yanlis Alarm Uretimi - Sahte Kaza Verisi ile Trafik Durdurma",
@@ -111,13 +112,13 @@ SCENARIO_DB = {
             {"id": "T1565.002", "taktor": "Impact",          "teknik": "Transmitted Data Manipulation"},
             {"id": "T1562.001", "taktor": "Defense Evasion", "teknik": "Impair Defenses: Disable or Modify Tools"},
         ],
-        "poc": "$ nc localhost 444\nATTACK_IDS_SPOOF_STOP\n# Tum araclara hiz=0 km/s sahte verisi\n# Etki: IDS sistemi kaza oldugunu sanarak tum kavsaklari durdurdu",
-        "etki": "Tum araclarin hizini 0 olarak raporlayan sahte sensor verisiyle IDS yanlis alarm uretmesi ve trafik sisteminin gereksiz yere durdurulmasi",
-        "oneri": "IDS sistemleri birden fazla bagimsiz sensor kaynagini capraz dogrulamali, tek kaynakli verilere dayanmamalidir.",
+        "poc": "$ nc localhost 444\nATTACK_IDS_SPOOF_STOP\nOK\n# Kurban arac secildi ve hiz sensoru 0 km/s olarak zehirlendi\n# IDS ani durus/kaza alarmi uretti\n# Acil arac filosu sahte alarm bolgesine yonlendirildi",
+        "etki": "Tek bir sensor kaynagindan gelen sahte 0 km/s verisiyle IDS sisteminin kaza alarmi uretmesi, acil arac filosunun yanlis bolgeye yonlendirilmesi ve trafik akisini gereksiz yere durdurmasi",
+        "oneri": "IDS sistemleri birden fazla bagimsiz sensor kaynagini capraz dogrulamali, ani durus alarmlarini konum, telemetri ve komsu arac verileriyle iliskilendirmeden kritik aksiyon baslatmamalidir.",
     },
     "ATTACK_IDS_SPOOF_SPEED": {
-        "baslik": "Isik Zamanlama Sabotaji - Asiri Hiz Verisi ile Kavsak Cokusu",
-        "zafiyet_adi": "Kavsak Kontrol Algoritmasi Manipulasyonu via Asiri Hiz Enjeksiyonu (CWE-345)",
+        "baslik": "Isik Zamanlama Sabotaji - Asiri Hiz Verisi ile Kavsak Faz Bozumu",
+        "zafiyet_adi": "Sahte Hiz Sensor Verisi ile Kavsak Faz Manipulasyonu (CWE-345)",
         "cvss_skor": "8.1",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H",
         "risk_seviyesi": "YUKSEK",
@@ -125,9 +126,9 @@ SCENARIO_DB = {
             {"id": "T1565.002", "taktor": "Impact", "teknik": "Transmitted Data Manipulation"},
             {"id": "T1499.002", "taktor": "Impact", "teknik": "Service Exhaustion Flood"},
         ],
-        "poc": "$ nc localhost 444\nATTACK_IDS_SPOOF_SPEED\n# Tum araclara hiz=150 km/s sahte verisi\n# Etki: Kavsak algoritmasi coktu, isiklar 1 sn'de bir degisti (disko modu)",
-        "etki": "150 km/s sahte hiz verisiyle kavsak kontrolorunun cokmesi, trafik isiklarinin kontrolsuz yanip sonmesi",
-        "oneri": "Sensor girdilerinde fiziksel olarak mumkun olmayan degerler icin sinir kontrolleri uygulanmali, outlier tespiti icin istatistiksel filtreler kullanilmalidir.",
+        "poc": "$ nc localhost 444\nATTACK_IDS_SPOOF_SPEED\nOK\n# IoT hiz sensor agina 150 km/s sahte telemetri basildi\n# Kavsak kontrol algoritmasi asiri hizli sanal araclar algiladi\n# Etki: Trafik isiklari 1 saniyelik gecislerle disko moduna alindi",
+        "etki": "150 km/s sahte hiz telemetrisiyle kavsak kontrol algoritmasinin karar mekanizmasinin bozulmasi, trafik isiklarinin 1 saniyelik hizli faz gecislerine zorlanmasi ve kavsak akisini guvensiz hale getirmesi",
+        "oneri": "Sensor girdilerinde fiziksel olarak mumkun olmayan degerler icin sinir kontrolleri uygulanmali, hiz telemetrisi birden fazla kaynakla dogrulanmali ve outlier tespiti icin istatistiksel filtreler kullanilmalidir.",
     },
     "ATTACK_V2X_V2V": {
         "baslik": "V2V Sybil Saldirisi - Sahte Acil Fren Sinyali ile Zincirleme Kaza",
@@ -240,6 +241,7 @@ def format_test_logs(logs):
             or line.startswith("SPEED")
             or line.startswith("SENSOR")
             or line.startswith("IDS")
+            or line.startswith("FAKE")
             or line.startswith("V2X")
         ):
             important.append(line)
@@ -259,6 +261,27 @@ def escape_pdf_text(text):
     )
 
 
+def strip_inline_markdown(text):
+    return (
+        str(text)
+        .replace("**", "")
+        .replace("`", "")
+        .strip()
+    )
+
+
+def clean_llm_response(text):
+    text = str(text or "").strip()
+    text = re.sub(r"^\s*#+\s*.*\n+", "", text)
+    text = re.sub(r"^\s*\*\*[^*\n]{3,80}\*\*\s*\n+", "", text)
+    text = re.sub(r"^\s*(Yonetici Ozeti|Yönetici Özeti|Giris|Giriş|Sonuc|Sonuç)\s*:?\s*\n+", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^\s*Aşağıdaki .*?:\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^\s*Asagidaki .*?:\s*", "", text, flags=re.IGNORECASE)
+    if len(text) >= 2 and text[0] in "\"'" and text[-1] == text[0]:
+        text = text[1:-1].strip()
+    return text
+
+
 class ReportingAgent:
     def __init__(self, model_name="llama3.1:latest", api_url="http://localhost:11434/api/generate"):
         self.model_name = model_name
@@ -275,7 +298,7 @@ class ReportingAgent:
         try:
             resp = requests.post(self.api_url, json=payload, timeout=120)
             resp.raise_for_status()
-            return resp.json().get("response", "").strip()
+            return clean_llm_response(resp.json().get("response", ""))
         except Exception as e:
             return f"[LLM bağlantı hatası: {e}]"
 
@@ -361,21 +384,21 @@ Sadece sonuç metnini yaz."""
 | Rapor Tarihi | {timestamp} |
 | Test Aracı | PENTEZ-AI v1.0 |
 | Hedef | V2X Trafik Simülasyon Ağı |
-| Senaryo | `{scenario}` |
+| Senaryo | {sc['baslik']} |
 | Nihai Durum | **{durum}** |
 
 ---
 
 ## 2. İçindekiler
 
-- 3. Giriş
-- 4. Kapsam
-- 5. Yönetici Özeti (Executive Summary)
-- 6. Zafiyetler ve Detaylı Analiz
-- 7. Kanıtlar (Proof of Concept)
-- 8. MITRE ATT&CK Özeti
-- 9. Öneriler
-- 10. Sonuç
+3. Giriş
+4. Kapsam
+5. Yönetici Özeti (Executive Summary)
+6. Zafiyetler ve Detaylı Analiz
+7. Kanıtlar (Proof of Concept)
+8. MITRE ATT&CK Özeti
+9. Öneriler
+10. Sonuç
 
 ---
 
@@ -607,7 +630,7 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
             for ri, row in enumerate(rows):
                 para_row = []
                 for ci, cell in enumerate(row):
-                    txt = escape_pdf_text(cell)
+                    txt = escape_pdf_text(strip_inline_markdown(cell))
                     style = s_cell_bold if (ri == 0 and header) else s_cell
                     para_row.append(Paragraph(txt, style))
                 para_rows.append(para_row)
@@ -627,13 +650,15 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
         story = []
 
         # Kapak başlık
-        story.append(Spacer(1, 1*cm))
+        story.append(Spacer(1, 0.25*cm))
         story.append(Paragraph("PENTEZ-AI", ParagraphStyle("cover_dj", fontName=FONT_BOLD,
-                                fontSize=28, textColor=RED, alignment=TA_CENTER)))
+                                fontSize=24, leading=28, textColor=RED,
+                                alignment=TA_CENTER, spaceAfter=2)))
         story.append(Paragraph("Sızma Testi Raporu", ParagraphStyle("cover2_dj", fontName=FONT_NORMAL,
-                                fontSize=18, textColor=DARK, alignment=TA_CENTER)))
-        story.append(HRFlowable(width="100%", thickness=2, color=RED, spaceAfter=10))
-        story.append(Spacer(1, 0.5*cm))
+                                fontSize=13, leading=17, textColor=DARK,
+                                alignment=TA_CENTER, spaceAfter=8)))
+        story.append(HRFlowable(width="100%", thickness=1.5, color=RED,
+                                spaceBefore=4, spaceAfter=18))
 
         # Markdown satırlarını parse et
         lines = md_content.split("\n")
@@ -681,24 +706,24 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
 
             # Başlıklar
             if line.startswith("## "):
-                story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#eeeeee"), spaceBefore=8))
                 story.append(Paragraph(line[3:], s_h1))
             elif line.startswith("### "):
                 story.append(Paragraph(line[4:], s_h2))
             elif line.startswith("# "):
                 pass  # Ana başlık zaten kapakta
             elif line.startswith("---"):
-                story.append(HRFlowable(width="100%", thickness=0.5,
-                                        color=colors.HexColor("#cccccc"), spaceBefore=4, spaceAfter=4))
+                story.append(Spacer(1, 6))
             elif line.startswith("- ") or line.startswith("* "):
-                txt = escape_pdf_text(line[2:].replace("`", "").replace("**", ""))
-                story.append(Paragraph(f"- {txt}", s_body))
+                txt = escape_pdf_text(strip_inline_markdown(line[2:]))
+                if re.match(r"^\d+\.\s+", txt):
+                    story.append(Paragraph(txt, s_body))
+                else:
+                    story.append(Paragraph(f"- {txt}", s_body))
             elif line.strip().startswith("**") and line.strip().endswith("**"):
-                story.append(Paragraph(f"<b>{line.strip()[2:-2]}</b>", s_body))
+                story.append(Paragraph(f"<b>{escape_pdf_text(strip_inline_markdown(line))}</b>", s_body))
             elif line.strip():
                 clean = escape_pdf_text(line.strip())
                 # Bold
-                import re
                 clean = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', clean)
                 clean = re.sub(r'`(.+?)`', rf'<font name="{FONT_MONO}" size="9">\1</font>', clean)
                 story.append(Paragraph(clean, s_body))
@@ -722,3 +747,4 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
         doc.build(story)
         print(f"✅ [RAPORLAMA] PDF raporu oluşturuldu: {pdf_path}")
         return pdf_path
+
