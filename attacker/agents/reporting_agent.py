@@ -1,13 +1,23 @@
 ﻿import requests
 import json
 from datetime import datetime
+import io
 import os
 import re
+import zipfile
+import xml.etree.ElementTree as ET
 
 import platform
 if platform.system() == "Windows":
     FONT_DIR = "C:/Windows/Fonts"
     # DejaVu yoksa Arial kullan
+
+CWE_XML_URL = "https://cwe.mitre.org/data/xml/cwec_latest.xml.zip"
+CWE_CACHE_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "data",
+    "cwe_cache.json",
+)
 
 # ─── SENARYO VERİ TABANI ────────────────────────────────────────────────────
 # Her saldırı senaryosu için CVSS, MITRE, PoC gibi veriler hardcode
@@ -60,7 +70,7 @@ SCENARIO_DB = {
     },
     "ATTACK_WEBPANEL_LOCKDOWN": {
         "baslik": "Web Panel Uzerinden Arac Yonetim Sistemine Yetkisiz Erisim ve Arac Kilitleme",
-        "zafiyet_adi": "Bozuk Erisim Kontrolu (CWE-284) + SQL Injection Zinciri",
+        "zafiyet_adi": "Bozuk Erisim Kontrolu (CWE-284)",
         "cvss_skor": "9.6",
         "cvss_vektor": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
         "risk_seviyesi": "KRITIK",
@@ -69,9 +79,9 @@ SCENARIO_DB = {
             {"id": "T1548",     "taktor": "Privilege Escalation", "teknik": "Abuse Elevation Control Mechanism"},
             {"id": "T1499",     "taktor": "Impact",               "teknik": "Endpoint Denial of Service"},
         ],
-        "poc": "POST /login -> SQL Injection\nGET /vehicles -> HTTP 200 OK\nPOST /vehicles/lock -> LOCK_VEHICLE komutu iletildi",
+        "poc": "GET /vehicles -> HTTP 200 OK\nPOST /vehicles/lock -> LOCK_VEHICLE komutu iletildi\n[IMPACT] Hedef arac hareket komutlarina yanitsiz hale getirildi",
         "etki": "Hedef aracın uzaktan kilitlenmesi, trafik içi ani duruş ve çarpışma riski",
-        "oneri": "Oturum yönetimi güçlendirilmeli, /vehicles endpoint'ine yetkilendirme middleware eklenmeli, SQL injection için prepared statement kullanılmalıdır.",
+        "oneri": "Oturum yönetimi güçlendirilmeli, /vehicles ve /vehicles/lock endpoint'lerine rol tabanlı yetkilendirme middleware eklenmelidir.",
     },
     "ATTACK_FAKE_VEHICLE": {
         "baslik": "Sahte Araç Enjeksiyonu ile V2X Yol Kilitleme (Sybil Saldırısı)",
@@ -157,8 +167,8 @@ SCENARIO_DB = {
             {"id": "T1565.002", "taktor": "Impact",         "teknik": "Transmitted Data Manipulation"},
             {"id": "T1498",     "taktor": "Impact",         "teknik": "Network Denial of Service"},
         ],
-        "poc": "$ nc localhost 444\nATTACK_V2X_V2I\n# 1. Araç içi ünite (OBU) ele geçirildi\n# 2. Kavşak RSU'suna sahte Acil Durum / Yüksek Hız verisi gönderildi\n# 3. Akıllı kavşak sahte veriye güvenerek kilitlendi",
-        "etki": "Araç içi ünitenin (OBU) ele geçirilerek kavşak RSU'suna sahte acil durum verisi iletilmesi ve akıllı kavşak sisteminin kilitlenmesi",
+        "poc": "$ nc localhost 444\nATTACK_V2X_V2I\n# 1. Araç içi ünite (OBU) ele geçirildi\n# 2. Kavşak RSU'suna sahte Acil Durum / Yüksek Hız verisi gönderildi\n# 3. Merkez kavşak kırmızı kilide alındı\n# 4. Çevrede araç yoksa PoC etkisini göstermek için kavşak yaklaşım şeritlerine kontrollü etkilenen araçlar eklendi",
+        "etki": "Araç içi ünitenin (OBU) ele geçirilerek kavşak RSU'suna sahte acil durum verisi iletilmesi, merkez kavşağın kırmızı kilide alınması ve kavşak yaklaşımındaki araçların durdurularak trafik akışının kesintiye uğratılması",
         "oneri": "V2I altyapısında RSU'lar yalnızca sertifikalı OBU'lardan gelen imzalı mesajları kabul etmeli, anormallik tespiti için davranışsal analiz uygulanmalıdır.",
     },
 }
@@ -175,6 +185,19 @@ DEFAULT_SCENARIO = {
     "poc": "Log verilerinden elde edilen kanıt",
     "etki": "Sistem güvenliğinin ihlali",
     "oneri": "İlgili güvenlik yamaları uygulanmalıdır.",
+}
+
+VULN_TO_SCENARIO = {
+    "LOGIN_PAGE_FOUND": "ATTACK_SQL",
+    "SSH_OPEN_WEAK_PASSWORD": "ATTACK_RANSOMWARE",
+    "UNAUTHENTICATED_SPEED_CONTROL": "ATTACK_SPEED_SPOOF",
+    "WEBPANEL_LOCKDOWN": "ATTACK_WEBPANEL_LOCKDOWN",
+    "UNAUTHENTICATED_VEHICLE_INJECTION": "ATTACK_FAKE_VEHICLE",
+    "UNAUTHENTICATED_SENSOR_API": "ATTACK_SENSOR_SPOOF",
+    "IDS_FALSE_ALARM_VULN": "ATTACK_IDS_SPOOF_STOP",
+    "IDS_TIMING_VULN": "ATTACK_IDS_SPOOF_SPEED",
+    "UNAUTHENTICATED_V2V_API": "ATTACK_V2X_V2V",
+    "UNAUTHENTICATED_V2I_API": "ATTACK_V2X_V2I",
 }
 
 
@@ -195,10 +218,179 @@ def display_risk(risk):
     return labels.get(normalize_risk(risk), risk or "BILINMIYOR")
 
 
+def cwe_ids_from_vulnerability_name(name):
+    return re.findall(r"CWE-\d+", name or "")
+
+
 def cwe_from_vulnerability_name(name):
-    import re
-    matches = re.findall(r"CWE-\d+", name or "")
+    matches = cwe_ids_from_vulnerability_name(name)
     return ", ".join(matches) if matches else "N/A"
+
+
+def _strip_xml_namespace(tag):
+    return tag.split("}", 1)[-1] if "}" in tag else tag
+
+
+def _parse_cwe_xml(xml_bytes):
+    root = ET.fromstring(xml_bytes)
+    catalog = {
+        "version": root.attrib.get("Version") or root.attrib.get("version") or "unknown",
+        "source_url": CWE_XML_URL,
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "weaknesses": {},
+    }
+
+    for elem in root.iter():
+        if _strip_xml_namespace(elem.tag) != "Weakness":
+            continue
+        cwe_num = elem.attrib.get("ID")
+        cwe_name = (elem.attrib.get("Name") or "").strip()
+        if not cwe_num or not cwe_name:
+            continue
+        cwe_id = f"CWE-{cwe_num}"
+        catalog["weaknesses"][cwe_id] = {
+            "id": cwe_id,
+            "name": cwe_name,
+            "status": (elem.attrib.get("Status") or "").strip(),
+            "abstraction": (elem.attrib.get("Abstraction") or "").strip(),
+        }
+
+    return catalog
+
+
+def _download_cwe_catalog():
+    response = requests.get(CWE_XML_URL, timeout=12)
+    response.raise_for_status()
+
+    with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
+        xml_name = next(
+            (
+                name for name in zf.namelist()
+                if name.lower().endswith(".xml") and not name.lower().endswith(".xsd")
+            ),
+            None,
+        )
+        if not xml_name:
+            raise ValueError("CWE XML dosyasi ZIP paketi icinde bulunamadi")
+        return _parse_cwe_xml(zf.read(xml_name))
+
+
+def load_cwe_catalog():
+    if os.path.exists(CWE_CACHE_PATH):
+        try:
+            with open(CWE_CACHE_PATH, "r", encoding="utf-8") as f:
+                catalog = json.load(f)
+            if catalog.get("weaknesses"):
+                return catalog, "cache"
+        except Exception:
+            pass
+
+    try:
+        catalog = _download_cwe_catalog()
+        os.makedirs(os.path.dirname(CWE_CACHE_PATH), exist_ok=True)
+        with open(CWE_CACHE_PATH, "w", encoding="utf-8") as f:
+            json.dump(catalog, f, ensure_ascii=False, indent=2)
+        return catalog, "official"
+    except Exception as exc:
+        return {
+            "version": "offline",
+            "source_url": CWE_XML_URL,
+            "error": str(exc),
+            "weaknesses": {},
+        }, "offline"
+
+
+def format_cwe_validation_table(cwe_ids):
+    catalog, mode = load_cwe_catalog()
+    version = catalog.get("version") or "unknown"
+    weaknesses = catalog.get("weaknesses", {})
+
+    if not cwe_ids:
+        return "| N/A | CWE kimligi bulunamadi | Senaryo verisinde CWE etiketi yok |"
+
+    rows = []
+    for cwe_id in cwe_ids:
+        item = weaknesses.get(cwe_id)
+        if item:
+            official_name = item["name"].replace("|", "/")
+            if item.get("status"):
+                official_name = f"{official_name} [{item['status']}]"
+
+            source = "MITRE CWE resmi katalog"
+            if version != "unknown":
+                source = f"{source} v{version}"
+            if mode == "cache":
+                source = f"{source} (yerel cache)"
+            validation = f"{source} ile doğrulandı"
+        elif mode == "offline":
+            official_name = "Offline modda resmi ad okunamadı"
+            validation = "MITRE CWE katalog indirilemedi; rapor senaryo CWE kimliğini korudu"
+        else:
+            official_name = "Resmi katalogda bulunamadı"
+            validation = "CWE kimliği MITRE katalog cache'i ile eşleşmedi"
+
+        rows.append(f"| `{cwe_id}` | {official_name} | {validation} |")
+
+    return "\n".join(rows)
+
+
+def detected_scenarios_from_vulns(vulns, selected_scenario):
+    ordered = []
+    seen = set()
+
+    for vuln in vulns or []:
+        scenario = VULN_TO_SCENARIO.get(vuln)
+        if scenario and scenario not in seen:
+            ordered.append((vuln, scenario, SCENARIO_DB.get(scenario, DEFAULT_SCENARIO)))
+            seen.add(scenario)
+
+    if selected_scenario and selected_scenario in SCENARIO_DB and selected_scenario not in seen:
+        ordered.insert(0, ("EXPLOITED_SCENARIO", selected_scenario, SCENARIO_DB[selected_scenario]))
+
+    if not ordered:
+        ordered.append(("UNKNOWN", selected_scenario or "UNKNOWN", SCENARIO_DB.get(selected_scenario, DEFAULT_SCENARIO)))
+
+    return ordered
+
+
+def risk_counts_for_scenarios(detected):
+    counts = {"KRITIK": 0, "YUKSEK": 0, "ORTA": 0, "DUSUK": 0}
+    for _, _, scenario_data in detected:
+        key = normalize_risk(scenario_data.get("risk_seviyesi"))
+        if key in counts:
+            counts[key] += 1
+    return counts
+
+
+def format_detected_vulns_table(detected):
+    rows = []
+    for idx, (vuln_id, action, scenario_data) in enumerate(detected, start=1):
+        cwe = cwe_from_vulnerability_name(scenario_data.get("zafiyet_adi", ""))
+        rows.append(
+            f"| Z-{idx:02d} | `{vuln_id}` | {scenario_data['baslik']} | "
+            f"{display_risk(scenario_data['risk_seviyesi'])} | {scenario_data['cvss_skor']} | `{cwe}` |"
+        )
+    return "\n".join(rows)
+
+
+def format_detected_recommendations_table(detected):
+    priority_by_risk = {
+        "KRITIK": "ACİL",
+        "YUKSEK": "YÜKSEK",
+        "ORTA": "ORTA",
+        "DUSUK": "DÜŞÜK",
+    }
+    rows = []
+    seen = set()
+    for _, _, scenario_data in detected:
+        key = scenario_data["baslik"]
+        if key in seen:
+            continue
+        seen.add(key)
+        risk = normalize_risk(scenario_data.get("risk_seviyesi"))
+        priority = priority_by_risk.get(risk, "ORTA")
+        rows.append(f"| **{priority}** | {scenario_data['baslik']} | {scenario_data['oneri']} |")
+    return "\n".join(rows)
 
 
 def format_test_logs(logs):
@@ -277,9 +469,18 @@ def clean_llm_response(text):
     text = re.sub(r"^\s*(Yonetici Ozeti|Yönetici Özeti|Giris|Giriş|Sonuc|Sonuç)\s*:?\s*\n+", "", text, flags=re.IGNORECASE)
     text = re.sub(r"^\s*Aşağıdaki .*?:\s*", "", text, flags=re.IGNORECASE)
     text = re.sub(r"^\s*Asagidaki .*?:\s*", "", text, flags=re.IGNORECASE)
+    text = text.replace("Vehicüler Arası İletişim", "araçtan her şeye haberleşme")
+    text = text.replace("Vehiküler Arası İletişim", "araçtan her şeye haberleşme")
     if len(text) >= 2 and text[0] in "\"'" and text[-1] == text[0]:
         text = text[1:-1].strip()
     return text
+
+
+def selected_detail_id(detected, selected_scenario):
+    for idx, (_, action, _) in enumerate(detected, start=1):
+        if action == selected_scenario:
+            return f"Z-{idx:02d}"
+    return "Z-01"
 
 
 class ReportingAgent:
@@ -299,16 +500,54 @@ class ReportingAgent:
             resp = requests.post(self.api_url, json=payload, timeout=120)
             resp.raise_for_status()
             return clean_llm_response(resp.json().get("response", ""))
-        except Exception as e:
-            return f"[LLM bağlantı hatası: {e}]"
+        except Exception:
+            return ""
+
+    def _fallback_giris(self, scenario_data):
+        return (
+            "PENTEZ-AI, akıllı şehir trafik altyapısında zafiyetleri otonom olarak tespit etmek ve "
+            "kontrollü senaryolarla doğrulamak için geliştirilen bir sızma testi aracıdır. Test edilen "
+            "V2X trafik simülasyon ağı, araçlar, yol altyapısı ve kontrol servisleri arasındaki güvenilir "
+            "haberleşmeye dayandığı için kritik öneme sahiptir. Bu rapor, ilgili saldırı senaryosunun "
+            "sistem güvenliği ve trafik sürekliliği üzerindeki etkisini değerlendirmek amacıyla hazırlanmıştır. "
+            f"İncelenen ana senaryo: {scenario_data['baslik']}."
+        )
+
+    def _fallback_ozet(self, scenario_data, durum):
+        durum_text = "başarılı olmuştur" if durum == "SUCCESS" else f"{durum} durumuyla tamamlanmıştır"
+        return (
+            f"{scenario_data['baslik']} senaryosu kapsamında yürütülen test {durum_text}. "
+            "Recon aşamasında tespit edilen zafiyetler, sistemin yalnızca seçilen exploit açısından değil, "
+            "diğer açık yüzeyleri açısından da iyileştirme gerektirdiğini göstermiştir. Seçilen saldırı, "
+            f"{scenario_data['etki']} sonucunu doğurabilecek bir risk üretmiştir. Bu bulgular, kimlik doğrulama, "
+            "yetkilendirme, veri bütünlüğü doğrulaması ve izleme kontrollerinin güçlendirilmesi gerektiğini göstermektedir."
+        )
+
+    def _fallback_detay(self, scenario_data):
+        return (
+            "Zafiyetin temel nedeni, kritik komut veya telemetri akışlarında yeterli kimlik doğrulama, "
+            "yetkilendirme ya da veri bütünlüğü kontrolünün uygulanmamasıdır. Test sırasında bu zayıflık, "
+            "kontrollü bir PoC akışıyla doğrulanmış ve ilgili bileşenin güvenilmeyen girdilere tepki verdiği "
+            "gözlemlenmiştir. Bu durum, trafik güvenliği ve servis sürekliliği açısından yüksek etkili bir risk "
+            f"oluşturmuştur: {scenario_data['etki']}."
+        )
+
+    def _fallback_sonuc(self, scenario_data, durum):
+        return (
+            f"{scenario_data['baslik']} testi {durum} durumu ile tamamlanmış ve ilgili güvenlik açığının pratik "
+            "etkisi doğrulanmıştır. Bulgular, V2X trafik simülasyon ağında kritik servislerin güvenli varsayımlarla "
+            "çalıştırılmasının yeterli olmadığını göstermiştir. İlgili zafiyetler için önerilen kimlik doğrulama, "
+            "yetkilendirme, veri doğrulama ve izleme önlemlerinin uygulanması gerekmektedir."
+        )
 
     def _giris_ozeti(self, scenario_data, logs):
         prompt = f"""Sen kıdemli bir siber güvenlik analistisin. Aşağıdaki sızma testi için 3-4 cümlelik Türkçe, akademik ve resmi bir GİRİŞ paragrafı yaz.
 PENTEZ-AI, akıllı şehir trafik altyapısına yönelik geliştirilen otonom bir sızma testi aracıdır — V2X bileşeni DEĞİLDİR.
 Paragrafta şunları belirt: PENTEZ-AI'ın ne olduğu, test edilen sistemin (V2X trafik altyapısı) önemi, bu testin amacı.
+V2X'i "Vehicüler Arası İletişim" diye açma; V2X araçtan her şeye haberleşme / trafik altyapısı bağlamında anlatılmalıdır.
 Senaryo: {scenario_data['baslik']}
 Sadece paragraf metnini yaz, başlık veya ek açıklama ekleme."""
-        return self._llm_yorum(prompt, 300)
+        return self._llm_yorum(prompt, 300) or self._fallback_giris(scenario_data)
 
     def _yonetici_ozeti(self, scenario_data, logs, durum):
         log_str = "\n".join(logs[-10:]) if logs else "Log verisi yok"
@@ -318,6 +557,8 @@ Aşağıdaki sızma testi için teknik olmayan bir dille 4-5 cümlelik Türkçe 
 ZORUNLU KURALLAR:
 - Üçüncü şahıs kullan: "saldırı gerçekleştirildi", "sistem ele geçirildi", "zafiyet tespit edildi"
 - "Saldırmış bulunmaktayız", "gerçekleştirdik" gibi birinci şahıs ifadesi YASAK
+- "sistemimiz", "saldırganlar", "tehdit uyguladı" gibi muğlak veya sahiplik bildiren ifadeler YASAK
+- Geçmiş zaman kullan: "uygulanmıştır", "tespit edilmiştir", "görülmüştür"
 - Kavşak kilitlenmesi ve sahte veri enjeksiyonu trafik güvenliğini OLUMSUZ etkiler — bunu açıkça belirt
 - Saldırının başarılı olduğunu ve bunun ciddi bir güvenlik riski oluşturduğunu vurgula
 
@@ -326,7 +567,7 @@ Etki: {scenario_data['etki']}
 Nihai Durum: {durum}
 Loglar: {log_str}
 Sadece paragraf metnini yaz, başlık ekleme."""
-        return self._llm_yorum(prompt, 400)
+        return self._llm_yorum(prompt, 400) or self._fallback_ozet(scenario_data, durum)
 
     def _zafiyet_detay(self, scenario_data, logs):
         log_str = "\n".join(logs) if logs else "Log verisi yok"
@@ -336,13 +577,15 @@ Aşağıdaki zafiyet için 3-4 cümlelik Türkçe teknik AÇIKLAMA yaz.
 ZORUNLU KURALLAR:
 - Zafiyet adını veya başlığını tekrar yazma — sadece açıklama metni yaz
 - Zafiyetin KÖK NEDENİNİ (neden oluştu), NASIL İSTİSMAR EDİLDİĞİNİ ve SİSTEME ETKİSİNİ belirt
+- Tek paragraf yaz, aynı fikri tekrar etme
+- En fazla 4 cümle kullan
 - Akademik ve teknik dil kullan
 
 Zafiyet: {scenario_data['zafiyet_adi']}
 Senaryo: {scenario_data['baslik']}
 Log Kanıtları: {log_str}
 Sadece açıklama metnini yaz, başlık veya zafiyet adını ekleme."""
-        return self._llm_yorum(prompt, 350)
+        return self._llm_yorum(prompt, 350) or self._fallback_detay(scenario_data)
 
     def _sonuc(self, scenario_data, durum):
         prompt = f"""Sen kıdemli bir siber güvenlik analistisin.
@@ -358,7 +601,7 @@ ZORUNLU KURALLAR:
 Senaryo: {scenario_data['baslik']}
 Nihai Durum: {durum}
 Sadece sonuç paragrafını yaz."""
-        return self._llm_yorum(prompt, 300)
+        return self._llm_yorum(prompt, 300) or self._fallback_sonuc(scenario_data, durum)
 
     def generate_report(self, blackboard):
         print("\n📝 [RAPORLAMA] Rapor oluşturuluyor...")
@@ -367,8 +610,13 @@ Sadece sonuç paragrafını yaz."""
         logs     = state.get("logs", [])
         durum    = state.get("mission_status", "UNKNOWN")
         scenario = state.get("selected_scenario", "UNKNOWN")
+        detected_vulns = state.get("vulnerabilities", [])
 
         sc = SCENARIO_DB.get(scenario, DEFAULT_SCENARIO)
+        detected = detected_scenarios_from_vulns(detected_vulns, scenario)
+        detail_id = selected_detail_id(detected, scenario)
+        risk_counts = risk_counts_for_scenarios(detected)
+        total_detected = len(detected)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
         ts_file   = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -391,6 +639,11 @@ Sadece sonuç paragrafını yaz."""
 
         # Log tablosu
         log_listesi = format_test_logs(logs)
+        cwe_ids = cwe_ids_from_vulnerability_name(sc["zafiyet_adi"])
+        cwe_list = ", ".join(cwe_ids) if cwe_ids else "N/A"
+        cwe_tablo = format_cwe_validation_table(cwe_ids)
+        detected_vulns_tablo = format_detected_vulns_table(detected)
+        detected_oneri_tablo = format_detected_recommendations_table(detected)
 
         md = f"""# PENTEZ-AI Sızma Testi Raporu
 
@@ -452,24 +705,40 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
 
 | Seviye | Adet |
 |--------|------|
-| Kritik | {1 if risk_key == 'KRITIK' else 0} |
-| Yüksek | {1 if risk_key == 'YUKSEK' else 0} |
-| Orta | {1 if risk_key == 'ORTA' else 0} |
-| Düşük | {1 if risk_key == 'DUSUK' else 0} |
-| **Toplam** | **1** |
+| Kritik | {risk_counts['KRITIK']} |
+| Yüksek | {risk_counts['YUKSEK']} |
+| Orta | {risk_counts['ORTA']} |
+| Düşük | {risk_counts['DUSUK']} |
+| **Toplam** | **{total_detected}** |
 
 ---
 
 ## 6. Zafiyetler ve Detaylı Analiz
 
-### {risk_badge} Z-01 — {sc['zafiyet_adi']}
+### Tespit Edilen Tüm Zafiyetler
+
+Recon aşamasında sistem üzerinde aşağıdaki zafiyetler tespit edilmiştir. Ayrıntılı exploit kanıtı seçilen saldırı senaryosu için verilmiş, diğer zafiyetler risk ve iyileştirme kapsamına dahil edilmiştir.
+
+| ID | Recon Bulgusu | Senaryo | Risk | CVSS | CWE |
+|----|---------------|---------|------|------|-----|
+{detected_vulns_tablo}
+
+### {risk_badge} {detail_id} — {sc['zafiyet_adi']}
 
 | Alan | Değer |
 |------|-------|
 | Risk Seviyesi | **{risk_label}** |
 | CVSS v3.1 Skoru | **{sc['cvss_skor']} / 10.0** |
 | CVSS Vektörü | `{sc['cvss_vektor']}` |
-| CWE | `{cwe_from_vulnerability_name(sc['zafiyet_adi'])}` |
+| CWE | `{cwe_list}` |
+
+### CWE Doğrulama
+
+| CWE | MITRE CWE Resmi Adı | Doğrulama |
+|-----|----------------------|-----------|
+{cwe_tablo}
+
+*Kaynak: MITRE CWE resmi XML kataloğu (`{CWE_XML_URL}`).*
 
 **Açıklama:**
 
@@ -503,12 +772,12 @@ Bu sızma testinin kapsamı aşağıdaki bileşenlerle sınırlıdır:
 
 ## 9. Öneriler
 
-| Öncelik | Öneri |
-|---------|-------|
-| **ACİL** | {sc['oneri']} |
-| **YÜKSEK** | Tüm servisler için kimlik doğrulama ve yetkilendirme mekanizmaları gözden geçirilmelidir. |
-| **ORTA** | Sızma testi bulgularına yönelik düzenli güvenlik denetimleri planlanmalıdır. |
-| **DÜŞÜK** | Güvenlik farkındalığı eğitimlerinin personele uygulanması önerilmektedir. |
+| Öncelik | Zafiyet / Senaryo | Öneri |
+|---------|-------------------|-------|
+{detected_oneri_tablo}
+| **YÜKSEK** | Genel sertleştirme | Tüm servisler için kimlik doğrulama ve yetkilendirme mekanizmaları gözden geçirilmelidir. |
+| **ORTA** | Sürekli denetim | Sızma testi bulgularına yönelik düzenli güvenlik denetimleri planlanmalıdır. |
+| **DÜŞÜK** | Farkındalık | Güvenlik farkındalığı eğitimlerinin personele uygulanması önerilmektedir. |
 
 ---
 

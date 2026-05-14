@@ -260,6 +260,159 @@ def focus_camera_on_vehicle(veh_id, zoom=1800):
     except Exception as e:
         print(f">>> [KAMERA] Odaklama hatası: {e}")
 
+def select_lockdown_target(preferred_id="hedef_arac"):
+    active = list(traci.vehicle.getIDList())
+    if not active:
+        return None
+
+    left_priority_edges = (
+        "otoban_sol_1",
+        "sehir_solgiris",
+        "ara_sol_1",
+        "ara_merkez_1",
+    )
+
+    left_candidates = []
+    for veh_id in active:
+        try:
+            road_id = traci.vehicle.getRoadID(veh_id)
+            if road_id.startswith(left_priority_edges):
+                left_candidates.append(veh_id)
+        except Exception:
+            pass
+    if left_candidates:
+        try:
+            return max(left_candidates, key=lambda vid: traci.vehicle.getLanePosition(vid))
+        except Exception:
+            return left_candidates[0]
+
+    if preferred_id in active:
+        return preferred_id
+
+    try:
+        cx, cy = traci.junction.getPosition("center")
+        return min(
+            active,
+            key=lambda vid: (traci.vehicle.getPosition(vid)[0] - cx) ** 2
+                          + (traci.vehicle.getPosition(vid)[1] - cy) ** 2
+        )
+    except Exception:
+        return active[0]
+
+def focus_camera_on_junction(junction_id="center", zoom=1150):
+    try:
+        x, y = traci.junction.getPosition(junction_id)
+        traci.gui.trackVehicle("View #0", "")
+        traci.gui.setOffset("View #0", x, y)
+        traci.gui.setZoom("View #0", zoom)
+        print(f">>> [KAMERA] {junction_id} kavsagina odaklanildi (zoom={zoom}).")
+    except Exception as e:
+        print(f">>> [KAMERA] Kavsak odaklama hatasi: {e}")
+
+def select_v2i_zombie_vehicle(max_distance=180.0):
+    active = list(traci.vehicle.getIDList())
+    if not active:
+        return None
+
+    try:
+        cx, cy = traci.junction.getPosition("center")
+        scored = []
+        for veh_id in active:
+            try:
+                x, y = traci.vehicle.getPosition(veh_id)
+                dist_sq = (x - cx) ** 2 + (y - cy) ** 2
+                scored.append((dist_sq, veh_id))
+            except Exception:
+                pass
+        if not scored:
+            return active[0]
+
+        dist_sq, veh_id = min(scored, key=lambda item: item[0])
+        distance = dist_sq ** 0.5
+        if distance <= max_distance:
+            print(f">>> [V2I] Kavsaga en yakin OBU secildi: {veh_id} ({distance:.1f} m).")
+            return veh_id
+
+        print(f">>> [V2I] Aktif araclar kavsaga uzak; kontrollu OBU olusturulacak.")
+        return None
+    except Exception:
+        return active[0]
+
+def apply_vehicle_lockdown(source_label):
+    veh_id = select_lockdown_target()
+    if veh_id is None:
+        print(f">>> [HATA] {source_label}: Sahada kilitlenecek araç bulunamadı.")
+        return
+
+    if veh_id != "hedef_arac":
+        print(f">>> [{source_label}] hedef_arac uygun değil; {veh_id} hedef alınıyor.")
+
+    focus_camera_on_vehicle(veh_id, zoom=2600)
+    traci.vehicle.setSpeedMode(veh_id, 0)
+    traci.vehicle.setSpeed(veh_id, 0)
+    traci.vehicle.setMaxSpeed(veh_id, 0.01)
+    traci.vehicle.setColor(veh_id, (255, 50, 0, 255))
+    print(f">>> [{source_label}] {veh_id} UZAKTAN KİLİTLENDİ! Tüm hareket komutlarına yanıtsız.")
+
+def _ensure_route(route_id, edges):
+    try:
+        if route_id not in traci.route.getIDList():
+            traci.route.add(route_id, edges)
+    except Exception:
+        pass
+
+def _spawn_stopped_demo_vehicle(veh_id, route_id, lane_id, pos, color):
+    try:
+        if veh_id not in traci.vehicle.getIDList():
+            traci.vehicle.add(
+                vehID=veh_id,
+                routeID=route_id,
+                typeID="binek",
+                depart="now",
+                departSpeed="0",
+            )
+        traci.vehicle.moveTo(veh_id, lane_id, pos)
+        traci.vehicle.setSpeedMode(veh_id, 0)
+        traci.vehicle.setSpeed(veh_id, 0.0)
+        traci.vehicle.setMaxSpeed(veh_id, 0.01)
+        traci.vehicle.setColor(veh_id, color)
+        return True
+    except Exception as e:
+        print(f">>> [V2I] Demo arac olusturma hatasi ({veh_id}): {e}")
+        return False
+
+def create_v2i_demo_impact(zombie_veh=None):
+    """V2I saldirisinin bos trafikte de gorunur olmasi icin kavsakta kontrollu etki olusturur."""
+    timestamp = int(time.time())
+
+    route_specs = {
+        "v2i_route_left":   ["otoban_sol_1", "otoban_sag_1"],
+        "v2i_route_right":  ["otoban_sag_2", "otoban_sol_2"],
+        "v2i_route_top":    ["otoban_yukari_2", "otoban_asagi_1"],
+        "v2i_route_bottom": ["otoban_asagi_2", "otoban_yukari1"],
+    }
+    for route_id, edges in route_specs.items():
+        _ensure_route(route_id, edges)
+
+    created = 0
+    demo_specs = [
+        ("v2i_route_left",   "otoban_sol_1_0",    250.0),
+        ("v2i_route_left",   "otoban_sol_1_1",    228.0),
+        ("v2i_route_right",  "otoban_sag_2_0",    250.0),
+        ("v2i_route_right",  "otoban_sag_2_1",    226.0),
+        ("v2i_route_top",    "otoban_yukari_2_0", 250.0),
+        ("v2i_route_bottom", "otoban_asagi_2_0",  250.0),
+    ]
+
+    for idx, (route_id, lane_id, pos) in enumerate(demo_specs):
+        veh_id = f"v2i_block_{timestamp}_{idx}"
+        if _spawn_stopped_demo_vehicle(veh_id, route_id, lane_id, pos, (255, 40, 40, 255)):
+            created += 1
+
+    focus_camera_on_junction("center", zoom=1150)
+
+    print(f">>> [V2I] Kavsak cevresinde {created} etkilenen demo arac durduruldu.")
+
 def run_simulation():
     t = threading.Thread(target=start_socket_server)
     t.daemon = True
@@ -319,9 +472,7 @@ def run_simulation():
 
                 elif cmd == "HACK_VEHICLE":
                     try:
-                        traci.vehicle.setColor("hedef_arac", (128, 0, 128, 255))
-                        traci.vehicle.setSpeed("hedef_arac", 0)
-                        print(">>> [UYGULANDI] Araç kilitlendi!")
+                        apply_vehicle_lockdown("HACK_VEHICLE")
                     except Exception as e:
                         print(f">>> [BASARISIZ] HACK_VEHICLE: {e}")
 
@@ -333,16 +484,7 @@ def run_simulation():
 
                 elif cmd == "LOCK_VEHICLE":
                     try:
-                        veh_id = "hedef_arac"
-                        active = traci.vehicle.getIDList()
-                        if veh_id not in active:
-                            print(f">>> [LOCKDOWN] {veh_id} sahada değil, ilk araç hedef alınıyor.")
-                            if active:
-                                veh_id = active[0]
-                        traci.vehicle.setSpeed(veh_id, 0)
-                        traci.vehicle.setMaxSpeed(veh_id, 0.01)  # 0 geçersiz — 0.01 efektif olarak sıfır
-                        traci.vehicle.setColor(veh_id, (255, 50, 0, 255))
-                        print(f">>> [LOCKDOWN] {veh_id} UZAKTAN KİLİTLENDİ! Tum hareket komutlarina yanitsiz.")
+                        apply_vehicle_lockdown("LOCKDOWN")
                     except Exception as e:
                         print(f">>> [HATA] LOCK_VEHICLE: {e}")
 
@@ -627,8 +769,11 @@ def run_simulation():
                 elif cmd == "ATTACK_V2X_V2I":
                     print(f"!!! DEBUG: V2I ALTYAPI ZEHİRLEMESİ KOMUTU ALINDI !!!")
                     try:
-                        active_vehs = traci.vehicle.getIDList()
-                        zombie_veh = "hedef_arac" if "hedef_arac" in active_vehs else (active_vehs[0] if active_vehs else None)
+                        zombie_veh = select_v2i_zombie_vehicle()
+                        if not zombie_veh:
+                            _ensure_route("v2i_zombie_route", ["otoban_sol_1", "otoban_sag_1"])
+                            if _spawn_stopped_demo_vehicle("v2i_zombie_obu", "v2i_zombie_route", "otoban_sol_1_1", 245.0, (0, 255, 0, 255)):
+                                zombie_veh = "v2i_zombie_obu"
                         
                         if zombie_veh:
                             # Zombi aracı yeşile boya
@@ -640,16 +785,15 @@ def run_simulation():
                             if tl_ids:
                                 tl_id = tl_ids[0]
                                 # Güvenilir araçtan (OBU) geldiği için sistem sorgulamadan ışıkları dondurur
+                                current_state = traci.trafficlight.getRedYellowGreenState(tl_id)
+                                red_lock_state = "".join("r" if ch.lower() in ("g", "y", "r") else ch for ch in current_state)
+                                traci.trafficlight.setRedYellowGreenState(tl_id, red_lock_state)
                                 traci.trafficlight.setPhaseDuration(tl_id, 9999)
+                                create_v2i_demo_impact(zombie_veh)
                                 
                                 print(f"🚥 [KAVŞAK ÇÖKTÜ] Kendi aracından gelen sahte veriye güvenen sistem kilitlendi!")
                                 
-                                # Kamerayı zombiye kilitle
-                                try:
-                                    traci.gui.trackVehicle("View #0", zombie_veh)
-                                    traci.gui.setZoom("View #0", 1200)
-                                except:
-                                    pass
+                                focus_camera_on_junction("center", zoom=1150)
                             else:
                                 print(">>> [HATA] Haritada trafik ışığı bulunamadı.")
                         else:

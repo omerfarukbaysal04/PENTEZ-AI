@@ -15,10 +15,10 @@ ATTACKS = [
     {"id": 1,  "name": "SQL Injection ile Sunucu İhlali",       "category": "Merkezi Sistem",   "env_key": "SQL_INJECTION_ENABLED", "service": "web_panel",          "desc": "Web paneline SQLi ile sızılıp tüm ışıklar yeşile çevrilir"},
     {"id": 2,  "name": "Web Panel Lockdown (Araç Kilitleme)",    "category": "Merkezi Sistem",   "env_key": "WEBPANEL_LOCK_ENABLED", "service": "web_panel",          "desc": "Dashboard üzerinden araç motoru uzaktan kilitlenir"},
     {"id": 3,  "name": "SSH Brute Force & Ransomware",           "category": "Merkezi Sistem",   "env_key": "SSH_ENABLED",           "service": "vehicle_controller", "desc": "Zayıf parola kırılıp dosyalar şifrelenir, fidye notu bırakılır"},
-    {"id": 4,  "name": "Speed Spoofing (Port 444)",              "category": "IoT / Uç Nokta",   "env_key": "SPEED_SPOOF_ENABLED",   "service": "vehicle_controller", "desc": "Port 444 üzerinden ani hız değişimiyle kaza yaptırılır"},
     {"id": 5,  "name": "IoT Sensör Zehirleme (Çapraz Yönlü)",   "category": "IoT / Uç Nokta",   "env_key": "IOT_SENSOR_ENABLED",    "service": "vehicle_controller", "desc": "Kavşak API'sine sahte araç sayısı basılarak ışıklar kilitlenir"},
     {"id": 6,  "name": "IDS Yanlış Alarm (Acil Araç Filosu)",   "category": "IoT / Uç Nokta",   "env_key": "IDS_FALSE_ALARM_ENABLED","service": "vehicle_controller", "desc": "Sahte 0 km/h verisiyle ambulans/polis yanlış yönlendirilir"},
     {"id": 7,  "name": "Işık Zamanlama Sabotajı (Disko Modu)",  "category": "IoT / Uç Nokta",   "env_key": "IDS_TIMING_ENABLED",     "service": "vehicle_controller", "desc": "Her yönden 150 km/h verisiyle kavşak algoritması paniğe sürüklenir"},
+    {"id": 4,  "name": "Speed Spoofing (Port 444)",              "category": "V2X / Otonom Araç","env_key": "SPEED_SPOOF_ENABLED",   "service": "vehicle_controller", "desc": "Port 444 üzerinden aracın hız kontrolü manipüle edilir"},
     {"id": 8,  "name": "Fake Vehicle (Hayalet Araç Enjeksiyonu)","category": "V2X / Otonom Araç","env_key": "FAKE_VEHICLE_ENABLED",  "service": "vehicle_controller", "desc": "Hayalet araçlar haritaya duvar gibi dizilip rotalar kilitlenir"},
     {"id": 9,  "name": "V2V Yanlış Bilgi Yayılımı (Şok Dalgası)","category": "V2X / Otonom Araç","env_key": "V2V_ENABLED",           "service": "vehicle_controller", "desc": "Zombi araç 50m çevresine sahte kaza sinyali yayar"},
     {"id": 10, "name": "V2I Altyapı Zehirlenmesi (İçeriden)",   "category": "V2X / Otonom Araç","env_key": "V2I_ENABLED",           "service": "vehicle_controller", "desc": "Zombi OBU içeriden sahte telemetri basarak kavşağı felç eder"},
@@ -123,7 +123,7 @@ def draw_menu():
     print("  " + "-" * 62)
 
     current_cat = ""
-    for a in ATTACKS:
+    for menu_no, a in enumerate(ATTACKS, start=1):
         if a["category"] != current_cat:
             current_cat = a["category"]
             print(f"\n  ── {current_cat} ──")
@@ -131,7 +131,7 @@ def draw_menu():
         enabled = states[a["env_key"]]
         status  = "[ VULNERABLE ]" if enabled else "[   SECURE   ]"
         shared  = "*" if len(shared_names(a["env_key"])) > 1 else " "
-        print(f"  {a['id']:<4} {a['name'] + shared:<44} {status}")
+        print(f"  {menu_no:<4} {a['name'] + shared:<44} {status}")
 
     print()
     print("  * Yıldızlı saldırılar aynı anahtarı paylaşır — birlikte değişir.")
@@ -144,8 +144,8 @@ def draw_menu():
     print("=" * 68 + "\n")
 
 
-def toggle(attack_id):
-    a       = next(x for x in ATTACKS if x["id"] == attack_id)
+def toggle(menu_no):
+    a       = ATTACKS[menu_no - 1]
     key     = a["env_key"]
     states[key] = not states[key]
     new     = "VULNERABLE" if states[key] else "SECURE"
@@ -177,6 +177,7 @@ def main():
                 states[k] = True
             print("\n  ✓ Tüm açıklar VULNERABLE.")
             input("  [Enter]")
+            
 
         elif choice == "S":
             for k in states:
@@ -190,9 +191,9 @@ def main():
             print("=" * 68)
             print("  Ayarlar uygulandı.")
             print()
-            for a in ATTACKS:
+            for menu_no, a in enumerate(ATTACKS, start=1):
                 status = "VULNERABLE" if states[a["env_key"]] else "SECURE"
-                print(f"  {a['id']:<4} {a['name']:<44} {status}")
+                print(f"  {menu_no:<4} {a['name']:<44} {status}")
             print("=" * 68)
             print("\n  Sistem başlatılıyor...\n")
             sys.exit(0)

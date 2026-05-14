@@ -7,9 +7,11 @@ services:
       - "5000:5000"
     volumes:
       - ./web_panel:/app
+      - ./docker-compose.yaml:/config/docker-compose.yaml:ro
+      - ./attacker:/attacker_logs:ro
     environment:
-      SQL_INJECTION_ENABLED: "false"
-      WEBPANEL_LOCK_ENABLED: "false"
+      SQL_INJECTION_ENABLED: "true"
+      WEBPANEL_LOCK_ENABLED: "true"
       RANSOMWARE_ENABLED:    "true"    # Ransomware zafiyeti
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -21,13 +23,13 @@ services:
       - "2222:22"    # SSH — ransomware saldırısı
     container_name: vehicle_controller
     environment:
-      SSH_ENABLED: "false"
-      SPEED_SPOOF_ENABLED: "false"
-      IOT_SENSOR_ENABLED: "false"
-      IDS_FALSE_ALARM_ENABLED: "false"
-      IDS_TIMING_ENABLED: "false"
-      FAKE_VEHICLE_ENABLED: "false"
-      V2V_ENABLED: "false"
+      SSH_ENABLED: "true"
+      SPEED_SPOOF_ENABLED: "true"
+      IOT_SENSOR_ENABLED: "true"
+      IDS_FALSE_ALARM_ENABLED: "true"
+      IDS_TIMING_ENABLED: "true"
+      FAKE_VEHICLE_ENABLED: "true"
+      V2V_ENABLED: "true"
       V2I_ENABLED: "true"
     extra_hosts:
       - "host.docker.internal:host-gateway"

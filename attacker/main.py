@@ -2,6 +2,7 @@
 import time
 import sys
 import os
+import atexit
 
 print("[BOOT] PENTEZ-AI pentest araci yukleniyor...", flush=True)
 
@@ -25,6 +26,59 @@ class Colors:
     FAIL    = '\033[91m'
     ENDC    = '\033[0m'
     BOLD    = '\033[1m'
+
+LIVE_LOG_PATH = os.path.join(os.path.dirname(__file__), "live_pentest.log")
+
+
+class LiveLogTee:
+    def __init__(self, stream, log_file):
+        self.stream = stream
+        self.log_file = log_file
+
+    def write(self, data):
+        self.stream.write(data)
+        self.stream.flush()
+        self.log_file.write(data)
+        self.log_file.flush()
+
+    def flush(self):
+        self.stream.flush()
+        self.log_file.flush()
+
+    def isatty(self):
+        return getattr(self.stream, "isatty", lambda: False)()
+
+
+def enable_live_log():
+    try:
+        if os.path.exists(LIVE_LOG_PATH):
+            os.remove(LIVE_LOG_PATH)
+    except OSError:
+        pass
+
+    log_file = open(LIVE_LOG_PATH, "w", encoding="utf-8", buffering=1)
+    log_file.write("[LIVE] PENTEZ-AI canlı pentest terminali başlatıldı.\n")
+    sys.stdout = LiveLogTee(sys.stdout, log_file)
+    sys.stderr = LiveLogTee(sys.stderr, log_file)
+    return log_file
+
+
+def cleanup_live_log(log_file=None):
+    try:
+        sys.stdout.flush()
+        sys.stderr.flush()
+    except Exception:
+        pass
+    try:
+        if log_file:
+            log_file.close()
+    except Exception:
+        pass
+    try:
+        if os.path.exists(LIVE_LOG_PATH):
+            os.remove(LIVE_LOG_PATH)
+    except OSError:
+        pass
 
 def print_banner():
     banner = f"""{Colors.GREEN}
@@ -338,5 +392,15 @@ def main():
     print(f"\n{Colors.HEADER}>>> PENTEZ-AI Kapatılıyor. İyi günler!{Colors.ENDC}")
 
 if __name__ == "__main__":
-    main()
+    _original_stdout = sys.stdout
+    _original_stderr = sys.stderr
+    _live_log_file = None
+    try:
+        _live_log_file = enable_live_log()
+        atexit.register(cleanup_live_log, _live_log_file)
+        main()
+    finally:
+        sys.stdout = _original_stdout
+        sys.stderr = _original_stderr
+        cleanup_live_log(_live_log_file)
 
