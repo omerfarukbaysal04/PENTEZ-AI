@@ -1,59 +1,138 @@
-# PENTEZ-AI 🔐
-### Akıllı Şehir Sistemlerinde Yapay Zeka Güdümlü Hibrit Çoklu Agent Mimarisi Kullanarak Sızma Testi
+# PENTEZ-AI
 
-> **Pamukkale Üniversitesi — Bilgisayar Mühendisliği Lisans Tezi**  
-> Ömer Faruk BAYSAL 
+**AI destekli hibrit çoklu-agent mimarisi ile akıllı trafik altyapıları üzerinde sızma testi simülasyonu**
+
+> Pamukkale Üniversitesi — Bilgisayar Mühendisliği Lisans Bitirme Tezi  
+> **Ömer Faruk BAYSAL**  
+> Tez Danışmanı: **Dr. Öğr. Üyesi Alper Uğur**
+
 ---
 
 ## ⚠️ Sorumluluk Reddi
 
-Bu proje **yalnızca akademik araştırma amaçlıdır.** Tüm saldırı senaryoları kontrollü bir simülasyon ortamında (SUMO + Docker) gerçekleştirilmektedir. Gerçek sistemlere, altyapılara veya ağlara karşı kullanılması **kesinlikle yasaktır ve etik değildir.** Proje, güvenlik açıklarını tespit ederek savunma mekanizmalarının geliştirilmesine katkı sağlamak amacıyla hazırlanmıştır.
+PENTEZ-AI yalnızca **akademik araştırma, eğitim ve kontrollü simülasyon** amacıyla geliştirilmiştir. Projede yer alan saldırı senaryoları gerçek sistemlere, gerçek trafik altyapılarına veya üçüncü taraf ağlara karşı kullanılmak için tasarlanmamıştır.
+
+Tüm testler **SUMO trafik simülasyonu** ve **Docker tabanlı izole servisler** üzerinde yürütülmelidir. Gerçek sistemlere izinsiz erişim, tarama, saldırı veya manipülasyon girişimleri etik değildir ve hukuki sonuçlar doğurabilir.
 
 ---
 
-## 📖 Proje Hakkında
+## 📖 Proje Özeti
 
-PENTEZ-AI, akıllı şehir trafik altyapılarına yönelik sızma testini **otonom** olarak gerçekleştirebilen hibrit bir sistemdir. Geleneksel manuel pentest yöntemlerinin yetersiz kaldığı dinamik ve dağıtık akıllı şehir ortamlarında, **LLM + Çoklu Agent Sistemi (MAS) + Blackboard** mimarisini bir araya getirir.
+PENTEZ-AI, akıllı şehir trafik altyapılarına yönelik siber saldırı senaryolarını kontrollü bir ortamda test edebilen bir **hibrit otonom sızma testi prototipidir**. Sistem; Büyük Dil Modeli (LLM), görev bazlı mikro-agent yapısı, blackboard tabanlı ortak durum yönetimi, Docker servisleri ve SUMO trafik simülasyonunu bir araya getirir.
 
-### !!!BU PROJE AKTİF OLARAK GELİŞTİRİLMEYE DEVAM EDİLMEKTEDİR!!!
-### Temel Özellikler
-
-- 🧠 **LLM Tabanlı Stratejik Karar Verme** — Llama 3.1 ile otonom saldırı planlaması
-- 🤖 **Mikro-Ajan Mimarisi** — Recon, Web Analysis, Exploit ajanları
-- 📋 **Blackboard Koordinasyonu** — Ajanlar arası bağlam kaybı olmadan bilgi paylaşımı
-- 🛡️ **VULNERABLE / SECURE Mod** — Saldırı ve savunma senaryolarını karşılaştırmalı test etme
-- 🚦 **SUMO Simülasyonu** — Gerçekçi akıllı şehir trafik ortamı
+Projenin temel amacı, geleneksel manuel sızma testi yaklaşımlarının ve tekil LLM tabanlı otomasyon sistemlerinin akıllı şehir gibi dinamik, dağıtık ve siber-fiziksel ortamlarda karşılaşabileceği sınırlılıkları azaltmaya yönelik uygulanabilir bir mimari ortaya koymaktır.
 
 ---
 
-## 🏗️ Mimari
+## 🎯 Temel Özellikler
 
-```
-PENTEZ-AI
-├── attacker/                   # Otonom Pentest Motoru
-│   ├── agents/
-│   │   ├── recon_agent.py      # Port tarama ve keşif
-│   │   ├── web_agent.py        # Web servis analizi
-│   │   └── exploit_agent.py    # SQL Injection saldırısı
-│   ├── blackboard.py           # Ortak hafıza (Blackboard mimarisi)
-│   ├── llm_brain.py            # LLM stratejik karar mekanizması
-│   └── main.py                 # CLI giriş noktası
+- 🧠 **LLM tabanlı karar katmanı**  
+  Blackboard üzerindeki güncel sistem durumunu yorumlayarak bir sonraki görevi belirler.
+
+- 🤖 **Görev bazlı mikro-agent mimarisi**  
+  Keşif, web analizi, exploit yürütme ve raporlama gibi görevler ayrıştırılmıştır.
+
+- 📋 **Blackboard koordinasyonu**  
+  Agentlar arasında doğrudan karmaşık bağımlılık kurmadan ortak JSON tabanlı durum yönetimi sağlar.
+
+- 🚦 **SUMO trafik simülasyonu**  
+  Siber saldırıların trafik akışı, kavşak davranışı ve araç hareketleri üzerindeki temsilî etkilerini gözlemlemek için kullanılır.
+
+- 🐳 **Docker tabanlı izole test ortamı**  
+  Web panel, araç kontrol bileşeni ve hedef servisler güvenli bir laboratuvar ortamında çalıştırılır.
+
+- 🛡️ **Vulnerable / Secure mod desteği**  
+  Aynı saldırı senaryolarının güvensiz ve güvenli yapılandırmalarda nasıl farklı sonuçlar ürettiği karşılaştırılabilir.
+
+---
+
+## 🏗️ Mimari Yaklaşım
+
+PENTEZ-AI mimarisi dört temel katmandan oluşur:
+
+1. **LLM Karar Katmanı**  
+   Sistemin mevcut durumunu değerlendirir ve görev akışını yönlendirir.
+
+2. **Blackboard Bilgi Havuzu**  
+   Hedef bilgisi, keşif çıktıları, zafiyetler, seçilen senaryo ve saldırı sonuçlarını ortak JSON yapısı üzerinde tutar.
+
+3. **Mikro-Agent Katmanı**  
+   Recon, Web, Exploit ve Report gibi görevleri modüler şekilde yürütür.
+
+4. **SUMO–Docker Test Ortamı**  
+   Akıllı trafik altyapısını, web/API servislerini, araç kontrol bileşenlerini ve trafik simülasyonunu temsil eder.
+
+---
+
+## 📁 Proje Yapısı
+
+```text
+PENTEZ-AI/
+├── attacker/                    # Otonom pentest motoru
+│   ├── agents/                  # Görev bazlı agent bileşenleri
+│   ├── data/                    # Yardımcı veri dosyaları
+│   ├── blackboard.py            # Ortak durum yönetimi
+│   ├── llm_brain.py             # LLM karar katmanı
+│   ├── main.py                  # Ana saldırı döngüsü
+│   ├── live_pentest.log         # Çalışma logları
+│   └── DOSYALARINIZ_SIFRELENDI.txt
 │
-├── web_panel/                  # Hedef Sistem (Zafiyetli Web Paneli)
-│   ├── app.py                  # Flask uygulaması
+├── vehicle_controller/          # Araç kontrol servisi
+│   ├── control.py
 │   ├── Dockerfile
-│   └── requirements.txt
+│   └── start.sh
 │
-├── sumo-config/                # SUMO Simülasyon Dosyaları
-│   ├── network.net.xml         # Yol ağı
-│   ├── routes.rou.xml          # Araç rotaları
-│   ├── simulation.sumocfg      # Simülasyon ayarları
-│   └── dedectors.add.xml       # Dedektörler
+├── web_panel/                   # Merkezi trafik web paneli / API katmanı
+│   ├── app.py
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── logo.png
 │
-├── traffic_manager.py          # SUMO TraCI köprüsü + Komut sunucusu
-├── docker-compose.yaml         # Servis orkestrasyon
-└── calistir.bat                # Windows başlatma scripti
+├── network.net.xml              # SUMO yol ağı
+├── routes.rou.xml               # Araç rotaları
+├── simulation.sumocfg           # SUMO simülasyon yapılandırması
+├── dedectors.add.xml            # SUMO detector tanımları
+├── e1_0.xml / e1_1.xml          # Detector çıktıları
+├── e2_0.xml ... e2_3.xml        # Lane area detector çıktıları
+├── traffic_manager.py           # Trafik yönetim ve SUMO entegrasyon mantığı
+├── zafiyet_menu.py              # Zafiyet / mod / senaryo menüsü
+├── docker-compose.yaml          # Docker servis orkestrasyonu
+├── calistir.bat                 # Windows için genel başlatma betiği
+├── docker_baslat.bat            # Docker başlatma betiği
+├── trafik_baslat.bat            # Trafik simülasyonu başlatma betiği
+└── README.md
 ```
+
+---
+
+## 🧪 Saldırı Senaryoları
+
+PENTEZ-AI kapsamında saldırı senaryoları üç ana kategori altında ele alınmıştır.
+
+### 1. Merkezi Sistem Saldırıları
+
+| Senaryo | Hedef | Temsilî Etki |
+|---|---|---|
+| SQL Injection | Web panel / veri işleme katmanı | Trafik kontrol verisinin manipüle edilmesi |
+| Web Panel Lockdown | Yönetim paneli | Panel erişiminin veya kontrol fonksiyonlarının kısıtlanması |
+| SSH Brute Force ve Ransomware | Merkezi trafik sunucusu | Yetkisiz erişim ve dosya şifreleme etkisi |
+
+### 2. IoT/API Uç Noktası Saldırıları
+
+| Senaryo | Hedef | Temsilî Etki |
+|---|---|---|
+| Speed Spoofing | Sensör API uç noktası | Sahte hız verisi ile trafik kararlarının etkilenmesi |
+| Sensör Zehirleme | Yol kenarı sensörleri | Yanlış yoğunluk verisi ve trafik akışının bozulması |
+| IDS Yanlış Alarm | Uyarı / tespit mekanizması | Hatalı alarm üretimi ve yanlış yönlendirme |
+| Işık Zamanlama Sabotajı | Kavşak kontrol yapısı | Trafik ışığı davranışının bozulması |
+
+### 3. V2X ve Otonom Ağ Saldırıları
+
+| Senaryo | Hedef | Temsilî Etki |
+|---|---|---|
+| Fake Vehicle / Sybil Attack | Araç veri akışı | Sahte araç yoğunluğu ve rota davranışının bozulması |
+| V2V Sahte Bilgi Yayma | Araçtan araca iletişim | Zincirleme yanlış karar veya ani yavaşlama etkisi |
+| V2I Sahte Sinyal | Araç-altyapı iletişimi | Yanlış altyapı verisi ile trafik akışının bozulması |
 
 ---
 
@@ -61,146 +140,121 @@ PENTEZ-AI
 
 ### Gereksinimler
 
-| Araç | Versiyon | Link |
-|------|----------|------|
-| Python | 3.9+ | [python.org](https://python.org) |
-| Docker Desktop | Son sürüm | [docker.com](https://docker.com) |
-| SUMO | 1.18+ | [eclipse.dev/sumo](https://eclipse.dev/sumo) |
-| Ollama | Son sürüm | [ollama.ai](https://ollama.ai) |
-| Llama 3.1 | 8B | `ollama pull llama3.1` |
+| Araç | Açıklama |
+|---|---|
+| Python 3.9+ | Agent ve servis bileşenleri için |
+| Docker Desktop | İzole test servisleri için |
+| SUMO | Trafik simülasyonu için |
+| Ollama | Lokal LLM çalıştırmak için |
+| Llama 3.1 | LLM karar katmanı için kullanılan model |
 
-### Python Bağımlılıkları
+### Python bağımlılıkları
 
 ```bash
 pip install requests beautifulsoup4 traci
 ```
 
-### Adım Adım Başlatma
+### Ollama modeli
 
-**1. Ollama'yı başlat:**
 ```bash
 ollama serve
 ollama pull llama3.1
 ```
 
-**2. Güvenlik modunu seç** — `docker-compose.yaml` dosyasında:
-```yaml
-environment:
-  SECURITY_MODE: VULNERABLE   # VULNERABLE veya SECURE
-```
+### Docker servislerini başlatma
 
-**3. Doğrudan "calistir.bat" dosyasını çalıştır**
 ```bash
-Bu sayede docker ve diğer ortamlar otomatik çalışır ve açılır.
+docker compose up --build
 ```
 
-**4. PENTEZ-AI'ı çalıştır:**
+Windows ortamında yardımcı betikler kullanılabilir:
+
+```bash
+calistir.bat
+docker_baslat.bat
+trafik_baslat.bat
+```
+
+### PENTEZ-AI motorunu çalıştırma
+
 ```bash
 cd attacker
 python main.py -t localhost -m llama3.1
 ```
 
-> Windows kullanıcıları için `calistir.bat` adımları 3-5'i otomatik yapar.
+> Not: Komutlar geliştirme ortamına göre değişebilir. Proje, tez kapsamında hazırlanmış araştırma prototipi olduğu için çalıştırmadan önce Docker, SUMO ve Ollama servislerinin doğru şekilde ayarlandığından emin olunmalıdır.
 
 ---
 
-## 🎯 Saldırı Senaryoları
+## 🔄 Vulnerable / Secure Mod
 
-### Kategori 1 — Araç Odaklı Saldırılar
+PENTEZ-AI, saldırı senaryolarının iki farklı modda değerlendirilmesini destekler:
 
-| # | Saldırı | Hedef | Zafiyet | Etki |
-|---|---------|-------|---------|------|
-| 1 | **Ransomware** | `vehicle_controller` | Zayıf SSH şifresi | Araç kontrolü kilitleme |
-| 2 | **Speed Spoof** | `vehicle_controller` | Kimlik doğrulamasız soket | Ani hızlanma/yavaşlama |
-| 3 | **Movement Hack** | `vehicle_controller` | Kimlik doğrulamasız soket | Şerit değiştirme, rota değişimi |
+- **Vulnerable Mod:** Saldırının beklenen etkiyi oluşturabildiği zafiyetli davranışı temsil eder.
+- **Secure Mod:** Aynı saldırının güvenlik kontrolleriyle engellendiği veya sınırlandırıldığı davranışı temsil eder.
 
-### Kategori 2 — Altyapı Saldırıları
-
-| # | Saldırı | Hedef | Zafiyet | Etki |
-|---|---------|-------|---------|------|
-| 4 | **Traffic Light Manipulation** | `traffic_controller` | SQL Injection (Web Panel) | Tüm ışıkları yeşil yapma |
-| 5 | **IoT/API Data Poisoning** | `sensor_api_service` | Kimlik doğrulamasız API | Sahte trafik yoğunluğu verisi |
-| 6 | **Fake Vehicle** | SUMO Ağı | Ağda kimlik doğrulama yok | Hayalet araç spawn etme |
-| 7 | **Fake Speed Limit** | `RSU_Unit` | Varsayılan şifre | Hız limiti manipülasyonu |
-
-### Demo Saldırısı (SQL Injection → Traffic Light Manipulation)
-
-PENTEZ-AI'ın otonom çalışma akışı:
-
-```
-ADIM 1 [RECON]    → Port taraması → Port 5000 bulundu
-ADIM 2 [ANALYSIS] → Web paneli analizi → Admin login formu tespit edildi
-ADIM 3 [EXPLOIT]  → SQL Injection → Panele sızıldı → HACK_LIGHTS komutu
-SONUÇ             → Tüm kavşak ışıkları yeşile döndü (SUMO'da görünür)
-```
+Bu yaklaşım sayesinde saldırı etkileri ile savunma davranışları aynı simülasyon ortamında karşılaştırılabilir.
 
 ---
 
-## 🛡️ VULNERABLE vs SECURE Mod
+## 📊 Değerlendirme Yaklaşımı
 
-Sistem iki modda çalışabilir:
+Prototip aşağıdaki ölçütler üzerinden değerlendirilmiştir:
 
-### VULNERABLE Mod
-```
-SQL Injection Payload: ' OR '1'='1
-↓
-Web panel bypass edilir
-↓  
-Saldırgan panele erişir
-↓
-Trafik ışıkları hacklenir
-```
+- Senaryo çalıştırılabilirliği
+- Blackboard güncellemeleri
+- Vulnerable / Secure mod davranışı
+- SUMO üzerinde gözlemlenen trafik etkisi
+- Terminal logları ve raporlama çıktıları
 
-### SECURE Mod
-```
-SQL Injection Payload: ' OR '1'='1
-↓
-is_sql_injection() fonksiyonu tespit eder
-↓
-[ALERT] Şüpheli payload engellendi
-↓
-[LOG] IP adresi kayıt altına alındı
-```
-
-Mod değişimi `docker-compose.yaml` dosyasındaki tek bir satırla yapılır:
-```yaml
-SECURITY_MODE: VULNERABLE  # → SECURE olarak değiştir
-```
+Bu çalışma istatistiksel performans karşılaştırmasından ziyade, simülasyon tabanlı ve gözlemsel bir prototip değerlendirmesi sunmaktadır.
 
 ---
 
-## 📊 Sistem Bileşenleri
+## 🔬 Akademik Katkı
 
-### Blackboard Mimarisi
-Ajanlar birbirleriyle doğrudan değil, ortak bir bilgi tahtası (blackboard) üzerinden iletişim kurar. Bu sayede:
-- Bağlam kaybı (context loss) engellenir
-- Her ajan kendi görevine odaklanır
-- LLM gereksiz log gürültüsünden etkilenmez
+PENTEZ-AI aşağıdaki yönleriyle katkı sunmayı hedefler:
 
-### LLM Karar Mekanizması
-```
-Blackboard Özeti → Llama 3.1 → JSON Karar
-{"decision": "ATTACK_SQL", "reason": "..."}
-```
+- LLM tabanlı stratejik karar verme ile mikro-agent yürütme yapısını bir araya getirir.
+- Blackboard mimarisi ile bağlam kaybını azaltmaya yönelik ortak durum yönetimi sağlar.
+- Akıllı trafik altyapılarına yönelik merkezi sistem, IoT/API ve V2X saldırı kategorilerini aynı test ortamında ele alır.
+- Siber saldırıların trafik simülasyonu üzerindeki temsilî etkilerini gözlemlemeye imkân tanır.
+- Gelecekte geliştirilebilecek dijital kırmızı takım ve otonom sızma testi frameworkleri için temel oluşturur.
 
-Karar hiyerarşisi (öncelik sırasıyla):
-1. `mission_status == BLOCKED/SUCCESS` → **FINISH**
-2. `phase == EXPLOIT` → **ATTACK_SQL**
-3. `phase == ANALYSIS` → **ANALYZE_WEB**
-4. `phase == RECON` → **SCAN_PORTS**
+---
+
+## 📌 Kapsam ve Sınırlılıklar
+
+- Gerçek trafik donanımı kullanılmamıştır.
+- Gerçek RSU, DSRC veya C-V2X haberleşmesi uygulanmamıştır.
+- V2X saldırıları simülasyon ve API düzeyinde temsil edilmiştir.
+- Sistem genel amaçlı bir pentest frameworkü değil, akıllı trafik altyapılarına odaklanan akademik bir prototiptir.
+- Tüm saldırı etkileri izole ve kontrollü test ortamında değerlendirilmelidir.
 
 ---
 
 ## 📚 Referanslar
 
-- Ghena et al. (2014) — Green Lights Forever: Analyzing the Security of Traffic Infrastructure
-- Deng et al. (2024) — PentestGPT: Evaluating and Harnessing LLMs for Automated Penetration Testing
-- Petit & Shladover (2016) — Remote Attacks on Automated Vehicle Sensors
-- Al-Turjman et al. (2023) — Smart City Security and Privacy: A Comprehensive Review
+- Ghena et al. — *Green Lights Forever: Analyzing the Security of Traffic Infrastructure*
+- Deng et al. — *PentestGPT: Evaluating and Harnessing Large Language Models for Automated Penetration Testing*
+- Petit & Shladover — *Potential Cyberattacks on Automated Vehicles*
+- Chen et al. — *Exposing Congestion Attack on Emerging Connected Vehicle Based Traffic Signal Control*
+- Wang et al. — V2X / Sybil saldırıları üzerine çalışmalar
+
+---
+
+## 👤 Geliştirici
+
+**Ömer Faruk BAYSAL**  
+Bilgisayar Mühendisliği  
+Pamukkale Üniversitesi
+
+Portfolio: [omerfarukbaysal.netlify.app](https://omerfarukbaysal.netlify.app)
 
 ---
 
 ## 📄 Lisans
 
-Bu proje **yalnızca akademik kullanım** içindir.  
-© 2025 Ömer Faruk BAYSAL — Pamukkale Üniversitesi Bilgisayar Mühendisliği
+Bu proje akademik kullanım ve araştırma amacıyla paylaşılmıştır. İzinsiz gerçek sistem testleri, saldırılar veya kötüye kullanım kesinlikle yasaktır.
+
+© 2026 Ömer Faruk BAYSAL — Pamukkale Üniversitesi Bilgisayar Mühendisliği
